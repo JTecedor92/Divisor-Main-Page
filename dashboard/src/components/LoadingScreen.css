@@ -1,0 +1,97 @@
+.all{
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: black;
+    position: absolute;
+    transform: translateY(-1.95vh);
+    z-index: 10;
+}
+.imgf{
+    height: calc((30vw + 30vh) / 2);
+    display: block;
+    animation: spin 6s ease-out;
+        /* set to 6s*/
+
+}
+.imgh{
+    height: calc((30vw + 30vh) / 2);
+    display: block;
+    margin: auto;
+    /* transform: translateX(1vw); */
+    transition: opacity;
+}
+.bottom-right{
+    animation: br-seperate 1s ease-in;
+    /* set to 1s*/
+}
+.top-left{
+    margin-bottom: calc(-1 * ((30vw + 30vh) / 2));
+    animation: tl-seperate 1s ease-in;
+    /* set to 1s*/
+
+}
+.txt{
+    display: block;
+    margin: auto;
+    color:white;
+    font-size: calc((4vw + 4vh) / 2);
+    font-family: "orbitron", sans-serif;
+    /* ^ This Doesnt work lol plz help ^ */
+
+}
+@keyframes fadeOutAnimation {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  
+@keyframes nothing{
+    from{
+        rotate: 0deg;
+    }
+    to{
+        rotate: 0deg;
+    }
+}
+
+@keyframes spin{
+    from{
+        rotate: 0deg;
+    }
+    to{
+        rotate: 1080deg;
+    }
+}
+@keyframes tl-seperate{
+    from{
+        transform: translateX(0) translateY(0);
+    }
+    to{
+        transform: translateX(-100vw) translateY(-100vh);
+    }
+}
+@keyframes br-seperate{
+    from{
+        transform: translateX(0) translateY(0);
+    }
+    to{
+        transform: translateX(100vw) translateY(100vh);
+    }
+}
+@keyframes zoomIn{
+    from{
+        width: calc((30vw + 30vh) / 2);
+        height: calc((30vw + 30vh) / 2);
+    }
+    to{
+        width: calc((30vw + 30vh) * 64);
+        height: calc((30vw + 30vh) * 64);
+    }
+}

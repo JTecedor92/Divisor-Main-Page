@@ -1,0 +1,136 @@
+.title {
+    display: flex;
+    align-items: center;
+    color: white;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8vh;
+}
+
+.logo {
+    margin-top: -2.75vh;
+    margin-bottom: 0vh;
+    height: 15vh;
+}
+
+.left{
+    display: flex;
+    height: 100%;
+    flex-grow: 2;
+    min-width: 50%;
+}
+.right{
+    height: 100%;
+    flex-grow: 1;
+    display: flex;
+    justify-content: flex-end;
+}
+.topbar {
+    display: flex;
+    background-image: linear-gradient(to bottom, #303f6e, #2B3A67);
+    height: 10vh;
+    min-width: 100%;
+    box-shadow: rgba(45, 35, 66, 0.3) 0 4px 8px, rgb(21, 19, 32) 0 -2px 0 inset;
+}
+
+.tbutton {
+    height: 100%;
+    background-color: transparent;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 0;
+    cursor: pointer;
+    margin-right: 0.6vw;
+}
+
+.tbutton .icon {
+    font-size: 8vh;
+    color:rgb(255, 255, 255);
+    animation: rotate-120 0.6s forwards;
+}
+
+.triangle {
+    width: 0px;
+    height: 0px;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 12px solid #303f6e;
+    position: absolute;
+    z-index: 11;
+    transform: translate(calc(-23.5px + 7.5vw), -12px)
+}
+
+.dropdown-menu.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 1.6vh;
+    right: 1.5vw;
+    top: 12vh;
+    width: 15vw;
+    height: 36vh;
+    border-radius: 6px;
+    display: flex;
+    background-image: linear-gradient(to bottom, #303f6e, #2B3A67);
+    color: white;
+    position: absolute;
+    z-index: 10;
+    visibility: visible;
+    animation: fadein 0.75s forwards;
+}
+
+.dropdown-menu.inactive{
+    display: none;
+}
+
+.tbutton .icon:hover {
+    animation: rotate120 0.6s forwards;
+}
+
+.menu-item {
+    cursor: pointer;
+}
+
+.menu-item:hover {
+    color: #47B0FF;
+}
+
+.signout {
+    cursor: pointer;
+    color: #F00530;
+    padding: 0.5vh;
+}
+.signout:hover {
+    color: white;
+    background-color: #F00530;
+    padding: 0.5vh;
+    border-radius: 6px;
+}
+
+@keyframes fadein {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes rotate120 {
+    from{
+        transform: rotate(0deg);
+    }
+    to{
+        transform: rotate(120deg);
+    }
+}
+
+@keyframes rotate-120 {
+    from{
+        transform: rotate(0deg);
+    }
+    to{
+        transform: rotate(-120deg);
+    }
+}

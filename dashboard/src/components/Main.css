@@ -1,0 +1,86 @@
+body, html {
+    margin:0;
+    padding:0;
+    width: 100%;
+    height: 100%;
+}
+
+.all1 {
+    display: flex;
+    width: 100%;
+    height: 90%;
+}
+
+.welcome {
+    display: flex;
+    font-size: 3.4vw;
+    justify-content: center;
+    margin: 30px;
+    font-family: "JetBrains Mono", monospace;
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.button {
+    
+    background-image:radial-gradient(at 100% 0, #5adaff, #5468ff 100%);
+    color: white;
+    font-family: "JetBrains Mono", monospace;    
+    font-size: 3.6vh;
+    border:0;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 20px;
+    box-shadow: rgba(45, 35, 66, 0.3) 0 4px 8px, rgba(58, 65, 111, 0.4) 0 -4px 0 inset;
+    margin: 30px;
+    transition: box-shadow .15s,transform .15s;
+}
+
+
+
+.button:hover {
+    box-shadow: rgba(45, 35, 66, .4) 0 4px 8px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
+    transform: translateY(-2px);
+}
+
+.button:active {
+    box-shadow: #3c4fe0 0 3px 7px inset;
+    transform: translateY(2px);
+  }
+
+
+.sbstack {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around; 
+}
+
+.sbText {
+    font-size: 3.8vh;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    transition: 700ms ease;
+    font-variation-settings: "wght" 100;
+    color: white;
+    margin: 1.7vw;
+}
+
+
+.credits {
+    display: flex;
+    margin-top: 60vh;
+    margin-left: 1.7vw;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    cursor: pointer;
+    font-size: 3.8vh;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-variation-settings: "wght" 100;
+    color: white;
+    border: 0;
+    background-color: transparent;
+}
