@@ -11,6 +11,9 @@ const io = new Server(server, {
     }
 })
 
+const keys = [];
+const docs = [];
+
 app.use(express.static(path.join(__dirname, 'build')));
 
 
@@ -20,7 +23,20 @@ app.get("*", (req, res) =>{
 
 io.on('connection', (socket) =>{
     console.log("A user connected")
-    socket.on('chat message', (msg) =>{
+    socket.on('create', (msg) =>{
+        if(!keys.includes(msg.id)){       
+            docs.push(msg.value);
+            keys.push(msg.id);
+        }
+    });
+    socket.on('delete', (msg) =>{
+        const index = keys.indexOf(msg.id);
+        if(index !== -1){
+            keys.splice(index);
+            docs.splice(index);
+        }
+    });
+    socket.on('update', (msg) =>{
         console.log('message: ' + msg.message);
         console.log('senderID: ' + msg.senderID);
         console.log('recieverID: ' + msg.recieverID);
@@ -28,7 +44,7 @@ io.on('connection', (socket) =>{
     });
     socket.on('disconnect', () => {
         console.log('user disconnected');
-      });
+    });
 });
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
