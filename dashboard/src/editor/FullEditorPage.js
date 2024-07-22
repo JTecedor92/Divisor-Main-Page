@@ -15,29 +15,35 @@ function FullEditorPage() {
       setSocket(sock);
     }
   return (
-    <div className='all2'>
-        <h1 className='timer'>00:00</h1>
-        <button className='menu'>Menu</button>
-        <div className='problem-window'>
+    <div>
+      <div className='all2'>
+          <h1 className='timer'>00:00</h1>
+          <button className='menu'>Menu</button>
+        <div className='left'>
+          <div className='problem-window'>
             <div className='problem-selector'>
 
             </div>
+          </div>
         </div>
-        <div className=''></div>
-        <input onChange={(event)=>{
-          setSessionID(event.target.value)
-          }}></input>
-        <input onChange={(event)=>{
-          setuser2(event.target.value)
-          }}></input>
-        <button onClick={(event) =>{
-          setuser(user2);
-          socket.emit('create', {id: sessionID, username: user})
-        }}>Join Session</button>
+          <div className=''></div>
+          <input onChange={(event)=>{
+            setSessionID(event.target.value)
+            }}></input>
+          <input onChange={(event)=>{
+            setuser2(event.target.value)
+            }}></input>
+          <button onClick={(event) =>{
+            setuser(user2);
+            socket.emit('create', {id: sessionID, username: user})
+          }}>Join Session</button>
 
-        <div className='editor-window'>
+        <div className='right'>
+          <div className='editor-window'>
             <EditorStateManager sessionID={sessionID} user={user} setSocket={handleSocket}/>
+          </div>
         </div>
+      </div>
     </div>
   )
 }
