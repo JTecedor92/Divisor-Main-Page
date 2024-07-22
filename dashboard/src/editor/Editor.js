@@ -8,11 +8,16 @@ import 'codemirror/addon/edit/closebrackets'
 import { Controlled as ControlledEditorComponent } from 'react-codemirror2';
 
 
-function Editor({ language, value, handleChange}) {
+function Editor({ language, value, handleChange, editorFunc}) {
+
+  const componentRef = useRef(null);
 
   const onChange = (editor, data, value) => {
     handleChange(editor, data, value);
 
+    if (componentRef.current) {
+      componentRef.current.focus(); // Assuming the component forwards refs and has a focus method
+  }
     
   }
 
@@ -27,7 +32,14 @@ function Editor({ language, value, handleChange}) {
           lint: true,
           mode: language,
           lineNumbers: true,
-          autoCloseBrackets: true,
+          indentWithTabs: true, // Use tabs instead of spaces
+          tabSize: 2, // Set tab size to 2 spaces (or any value you prefer)
+          smartIndent: false, // Disable smart indentation
+        }}
+        editorDidMount={(editor) => {
+          console.log('editorDidMount:', editor);
+          componentRef.current = editor
+          editorFunc(editor);
         }}
       />
     </div>
