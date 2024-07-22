@@ -37,7 +37,7 @@ function Editor({ language, value, handleChange, editorFunc}) {
           smartIndent: false, // Disable smart indentation
         }}
         editorDidMount={(editor) => {
-          editor.setSize(null,'70vh');
+          editor.setSize('40vw','70vh');
           console.log('editorDidMount:', editor);
           componentRef.current = editor
           editorFunc(editor);

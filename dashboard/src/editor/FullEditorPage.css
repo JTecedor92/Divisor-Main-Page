@@ -14,8 +14,8 @@
 .editor-window {
     display: flex;
     font-family: Arial, Helvetica, sans-serif;
-    background: radial-gradient(at 100% 0, #5adaff, #5468ff 100%);
-    width: 50%;
+    height: 70vh;
+    width: 40vw;
     border: 5px;
     border-color: black;
     border-radius: 6px;

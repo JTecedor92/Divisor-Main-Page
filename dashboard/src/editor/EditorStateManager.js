@@ -10,6 +10,7 @@ function EditorStateManager({setSocket, sessionID, user}) {
     const [lastValue, setLastValue] = useState("");
     const [currentLanguage, setCurrentLanguage] = useState("text/x-java");
     const [editorInstance, setEditorInstance] = useState();
+    const [mouse, setMouseLocation] = useState(0);
     
 
     const outerSocket = useRef(null)
@@ -148,7 +149,7 @@ function EditorStateManager({setSocket, sessionID, user}) {
             }
             
             
-            if(msg.cursorLocation){
+            if(msg.cursorLocation && msg.username === user){
                 let index = 0;
                 let distance = msg.cursorLocation - lineToChar2[0];
                 for(let i = 1; i <lineToChar2.length; i++){

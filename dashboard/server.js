@@ -7,7 +7,9 @@ const { Server } = require("socket.io");
 const io = new Server(server, {
     cors: {
         origin: "*", // Adjust as necessary
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],
+        allowedHeaders: ["Content-Type"],
+        credentials: true
     }
 })
 
@@ -49,6 +51,8 @@ io.on('connection', (socket) =>{
 
     socket.on('add', (msg) =>{
 
+        console.log(JSON.stringify(msg));
+
         let dex = keys.indexOf(msg.id);
         let doc = docs[dex];
 
@@ -66,8 +70,6 @@ io.on('connection', (socket) =>{
             let temp = doc.substring(0, msg.atChar)
             let unclosedParenthesisCount = 0;
             for(let i = 0; i < temp.length; i++){
-                console.log("Searching: " + temp.substring(i, i+1) + ": " + (temp.substring(i, i+1) === '{').toString());
-                console.log(!(temp.substring(i-1, i) === "\\"))
                 if(temp.substring(i, i+1) === '{' && (i === 0 || !(temp.substring(i-1, i) === "\\"))){
                     unclosedParenthesisCount++;
                 }else if(temp.substring(i, i+1) === '}' && (i === 0 || (!temp.substring(i-1, i) === "\\"))){
@@ -77,11 +79,11 @@ io.on('connection', (socket) =>{
             console.log("Parenthecount" + unclosedParenthesisCount);
             if(unclosedParenthesisCount > 0){
                 for(let i = 0; i < text.length; i++){
-                    console.log("I is looping");
                     if(i === 0 || text[i] === "\n"){
                         for(let j = 0; j < unclosedParenthesisCount; j++){
-                            console.log("J is looping");
+                            
                             text = text.substring(0, i) + "\t" + text.substring(i, text.length);
+                            i++;
                         }
                     }
                 }
