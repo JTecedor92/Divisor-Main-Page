@@ -29,16 +29,54 @@ const userInfo = [];
 // });
 //id, type, fromChar, toChar
 
+function charToLine(char, value){
+    let lineToChar2 = [];
+    lineToChar2.push(0);
+    for(let i = 0; i < value.length;i++){
+        if(value[i] === '\n'){
+            lineToChar2.push(i+1);
+        }
+    }
+    let index = 0;
+    let distance = char - lineToChar2[0];
+    for(let i = 1; i <lineToChar2.length; i++){
+        if(char-lineToChar2[i] < distance && char > lineToChar2[i]){
+            index = i;
+            distance = char - lineToChar2[i];
+        }
+    }
+
+    return({line: index, char: char-lineToChar2[index]})
+}
+
+function lineToChar(line, char, value){
+    let lineToChar2 = [];
+
+    lineToChar2.push(0);
+
+    for(let i = 0; i < value.length; i++){
+        if(value[i] === '\n'){
+            lineToChar2.push(i+1);
+        }
+    }
+
+    console.log(lineToChar2);
+
+    return lineToChar2[line]+char;
+}
+
 io.on('connection', (socket) =>{
     console.log("A user connected")
     socket.on('create', (msg) =>{
         if(!keys.includes(msg.id)){       
-            docs.push("");
+            docs.push("hiiiii");
             keys.push(msg.id);
             docUpdates.push([]);
         }
         console.log("Message: " + JSON.stringify(msg));
         userInfo.push([msg.username, 0]);
+        console.log("Value:");
+        console.log(docs[keys.indexOf(msg.id)]);
         io.emit(msg.id, {value: docs[keys.indexOf(msg.id)], creation: true, cursorLocation: 1})
     });
 
@@ -118,7 +156,7 @@ io.on('connection', (socket) =>{
 
         console.log("Returning the document: " + doc)
         console.log((msg.atChar+text.length-offset))
-        io.emit(msg.id, {value: docs[dex], username: msg.username, cursorLocation: (msg.atChar+text.length-offset)})
+        io.emit(msg.id, {value: docs[dex], username: msg.username, cursorLocation: charToLine(msg.atChar+text.length-offset, docs[dex])})
     });
     socket.on('remove', (msg) =>{
         console.log('ID: ' + msg.id);
@@ -135,8 +173,8 @@ io.on('connection', (socket) =>{
 
         }
         docs[dex] = doc;
-
-        io.emit(msg.id, {value: docs[dex], cursorLocation: msg.fromChar})
+        
+        io.emit(msg.id, {value: docs[dex], cursorLocation: charToLine(msg.fromChar, docs[dex])})
     });
     socket.on('disconnect', () => {
         console.log('user disconnected');

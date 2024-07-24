@@ -2,6 +2,13 @@ import React, {useState, useEffect, useRef} from 'react'
 import Editor from './Editor';
 import socketIOClient from 'socket.io-client';
 
+import 'codemirror/lib/codemirror.css';
+import 'codemirror/mode/xml/xml';
+import 'codemirror/mode/clike/clike';
+import 'codemirror/mode/css/css';
+import 'codemirror/addon/edit/closebrackets'
+import { Controlled as ControlledEditor} from 'react-codemirror2';
+
 const endpoint = "http://localhost:3001";
 
 function EditorStateManager({setSocket, sessionID, user}) {
@@ -9,13 +16,22 @@ function EditorStateManager({setSocket, sessionID, user}) {
     const [currentLanguage, setCurrentLanguage] = useState("text/x-java");   
 
     const outerSocket = useRef(null)
+    const outerEditor = useRef();
+
+    const count = useRef(0);
+
+    const handleKeyDown = (editor, event) => {
+        count.current = 0;
+    }
 
     //Managing for Editor
-    const [valueFromStateManager, setValueFromStateManager] = useState("");
-    const [cursorLine, setCursorLine] = useState();
-    const [cursorCharacter, setCursorCharacter] = useState();
-
+    const [value, setValue] = useState("Not Updated");
+    // const [cursorLine, setCursorLine] = useState(0);
+    // const [cursorCharacter, setCursorCharacter] = useState(0);
     
+    const cursorLine = useRef(0)
+    const cursorCharacter = useRef(0)
+
 
     let charStart;
     let charEnd;
@@ -23,9 +39,12 @@ function EditorStateManager({setSocket, sessionID, user}) {
     let text2;
     let editCount = 0;
 
+    let charChecker;
+    let lineChecker;
 
 
-    function charToLine(char, value){
+
+    function charToLine(char){
         let lineToChar2 = [];
         lineToChar2.push(0);
         for(let i = 0; i < value.length;i++){
@@ -45,7 +64,7 @@ function EditorStateManager({setSocket, sessionID, user}) {
         return({line: index, char: char-lineToChar2[index]})
     }
 
-    function lineToChar(line, char, value){
+    function lineToChar(line, char){
         let lineToChar2 = [];
 
         lineToChar2.push(0);
@@ -65,6 +84,7 @@ function EditorStateManager({setSocket, sessionID, user}) {
     //Run this code whenever the editor recieves an update
     function handleChange(editor, data, value){
         //Log the data from the editor
+        console.log("Sessionid is " + sessionID);
         const text = data.text;
 
         console.log("Data:");
@@ -74,11 +94,12 @@ function EditorStateManager({setSocket, sessionID, user}) {
         type = data.origin;
 
         //Check if the type is any form of an addition
-        if(type === 'paste' || type === '+input'){
+        if(type === 'paste' || type === '+input' && count.current === 0){
+            count.current++;
             if(!(text.length === 1 && text[0] === "")){
 
             //Find the location of the character where the edit occurs
-            charStart = lineToChar(data.from.line, data.from.ch, valueFromStateManager)
+            charStart = lineToChar(data.from.line, data.from.ch, value)
             
             //Run this code if an a newline was requested
             if(text.length > 1 && text[0] === "" && text[1] === ""){
@@ -89,7 +110,11 @@ function EditorStateManager({setSocket, sessionID, user}) {
                 if(text.length === 1){
                     if(text[0] === "\{"){
                         text[0] = "{}";
-                    }else if(text[0] === "\"" || text[0] === "\'" || text[0] === "\(" || text[0] === '\['){
+                    }else if(text[0] === "\(" ){
+                        text[0] = "()";
+                    }else if(text[0] === '\['){
+                        text[0] = "[]";
+                    }if(text[0] === "\"" || text[0] === "\'"){
                         text[0] += text[0];
                     }
                 }
@@ -112,13 +137,13 @@ function EditorStateManager({setSocket, sessionID, user}) {
             outerSocket.current.emit('add', { id: sessionID, username: user, atChar: charStart, text: text2, editCount: editCount});
         }
         //Check if the edit is some form of a removal
-        }else if(type = 'cut' || type === '+delete'){
+        }else if(type === 'cut' || type === '+delete'){
             console.log("Data incoming...");
             console.log(data);
 
             //Find the point where the removal starts and ends
-            charStart = lineToChar(data.from.line, data.from.ch, valueFromStateManager);
-            charEnd = lineToChar(data.to.line, data.to.ch, valueFromStateManager);
+            charStart = lineToChar(data.from.line, data.from.ch, value);
+            charEnd = lineToChar(data.to.line, data.to.ch, value);
             
 
             console.log(`Requesting to delete characters from ${charStart} to ${charEnd}`)
@@ -139,27 +164,33 @@ function EditorStateManager({setSocket, sessionID, user}) {
         //Pass the socket to the FullEditorPage
         setSocket(socket);
 
-        //Whenever the socket sees its session id, read the message
+        //Called whenever the client's session ID comes through the socket
         socket.on(sessionID, (msg)=>{
-            if(msg.value){
+            if(msg.value || msg.value === ""){
                 //Log the recieved data
-            console.log("Editor recieved value:");
-            console.log(msg.value);
-            console.log("Editor recieved cursor position:");
-            console.log(msg.cursorLocation);
+                console.log("Editor recieved value:");
+                console.log(msg.value);
+                console.log("Editor recieved cursor position:");
+                console.log(msg.cursorLocation);
 
-            
-            setValueFromStateManager(msg.value)
-            
-            if(msg.cursorLocation){
-                let place = charToLine(msg.cursorLocation, msg.value)
-                setCursorLine(place.line);
-                setCursorCharacter(place.char)
-            }
-            }
-            
+                setValue(msg.value)
+                
+                if(msg.cursorLocation){
+                    // charChecker = msg.cursorLocation.char;
+                    // lineChecker = msg.cursorLocation.line;
+                    // setCursorLine(msg.cursorLocation.line);
+                    // setCursorCharacter(msg.cursorLocation.char)
+                    // console.log("Line checker is " + lineChecker);
+                    // console.log("char checker is " + charChecker)
+                    cursorLine.current = msg.cursorLocation.line;
+                    cursorCharacter.current = msg.cursorLocation.char;
+                    try{
+                        console.log(`Setting cursor position to line ${cursorLine.current}, character ${cursorCharacter.current}`)
+                        outerEditor.current.setCursor(cursorLine.current, cursorCharacter.current)
+                    }catch(error){}
+                }
+            } 
         });
-
         
         return () => {
             socket.disconnect();
@@ -167,9 +198,32 @@ function EditorStateManager({setSocket, sessionID, user}) {
 
     }, [sessionID])
 
+  
+
     return (
-        <Editor language={currentLanguage} handleChange={handleChange} valueFromStateManager={valueFromStateManager} cursorCharacter={cursorCharacter} cursorLine={cursorLine}/>
+        <div className="editor">
+            <ControlledEditor
+                onBeforeChange={handleChange}
+                value= {value}
+                className="code-mirror-wrapper"
+                options={{
+                    lineWrapping: true,
+                    lint: true,
+                    mode: currentLanguage,
+                    lineNumbers: true,
+                    indentWithTabs: true, // Use tabs instead of spaces
+                    tabSize: 2, // Set tab size to 2 spaces (or any value you prefer)
+                    smartIndent: false, // Disable smart indentation
+                }}
+                editorDidMount={(editor) => {
+                    outerEditor.current = editor;
+                    editor.setSize('45vw','75vh');
+                }}
+                onKeyDown={handleKeyDown}
+            />
+        </div>
      )
 }
 
 export default EditorStateManager
+

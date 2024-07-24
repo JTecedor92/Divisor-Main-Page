@@ -25,6 +25,7 @@ function Editor({language, handleChange, valueFromStateManager, cursorLine, curs
 
   useEffect(() => {
     if(outerEditor.current && cursorLine && cursorCharacter){
+      console.log(`Setting cursor position to line ${cursorLine}, character ${cursorCharacter}`)
       outerEditor.current.setCursor(cursorLine, cursorCharacter)
 
     }
