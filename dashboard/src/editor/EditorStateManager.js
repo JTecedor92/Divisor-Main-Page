@@ -6,16 +6,17 @@ const endpoint = "http://localhost:3001";
 
 function EditorStateManager({setSocket, sessionID, user}) {
 
-    const [currentEditorValue, setCurrentEditorValue] = useState("");
-    const [lastValue, setLastValue] = useState("");
-    const [currentLanguage, setCurrentLanguage] = useState("text/x-java");
-    const [editorInstance, setEditorInstance] = useState();
-    const [mouse, setMouseLocation] = useState(0);
-    
+    const [currentLanguage, setCurrentLanguage] = useState("text/x-java");   
 
     const outerSocket = useRef(null)
-    const outerEditor = useRef(null)
-    let lineToChar;
+
+    //Managing for Editor
+    const [valueFromStateManager, setValueFromStateManager] = useState("");
+    const [cursorLine, setCursorLine] = useState();
+    const [cursorCharacter, setCursorCharacter] = useState();
+
+    
+
     let charStart;
     let charEnd;
     let type;
@@ -23,43 +24,61 @@ function EditorStateManager({setSocket, sessionID, user}) {
     let editCount = 0;
 
 
-    function setEditor (editor){
-        setEditorInstance(editor);
+
+    function charToLine(char, value){
+        let lineToChar2 = [];
+        lineToChar2.push(0);
+        for(let i = 0; i < value.length;i++){
+            if(value[i] === '\n'){
+                lineToChar2.push(i+1);
+            }
+        }
+        let index = 0;
+        let distance = char - lineToChar2[0];
+        for(let i = 1; i <lineToChar2.length; i++){
+            if(char-lineToChar2[i] < distance && char > lineToChar2[i]){
+                index = i;
+                distance = char - lineToChar2[i];
+            }
+        }
+
+        return({line: index, char: char-lineToChar2[index]})
     }
+
+    function lineToChar(line, char, value){
+        let lineToChar2 = [];
+
+        lineToChar2.push(0);
+
+        for(let i = 0; i < value.length; i++){
+            if(value[i] === '\n'){
+                lineToChar2.push(i+1);
+            }
+        }
+
+        console.log(lineToChar2);
+
+        return lineToChar2[line]+char;
+    }
+
 
     //Run this code whenever the editor recieves an update
     function handleChange(editor, data, value){
-
         //Log the data from the editor
         const text = data.text;
 
         console.log("Data:");
         console.log(data);
 
-        //Create an empty array to hold the location (In characters) of each new line
-        lineToChar = [];
-
-        //Push 0 to the array because the first line starts at character 0
-        lineToChar.push(0);
-
-        //Search through the previous value to find all the new lines
-        //(Previous because the coder is seeing the state before the edit on screen until they recieve a response from the server)
-        for(let i = 0; i < lastValue.length;i++){
-            if(lastValue[i] === '\n'){
-                lineToChar.push(i+1);
-            }
-        }
-        
-        // lineToChar.push(lastValue.length);
-
         //Set the edit type
         type = data.origin;
 
         //Check if the type is any form of an addition
         if(type === 'paste' || type === '+input'){
+            if(!(text.length === 1 && text[0] === "")){
 
             //Find the location of the character where the edit occurs
-            charStart = lineToChar[data.from.line]+data.from.ch;
+            charStart = lineToChar(data.from.line, data.from.ch, valueFromStateManager)
             
             //Run this code if an a newline was requested
             if(text.length > 1 && text[0] === "" && text[1] === ""){
@@ -84,32 +103,30 @@ function EditorStateManager({setSocket, sessionID, user}) {
                     }
                 }
             }
-
-
-            
-
             
             
             //Console log the text being sent to the server for addition
-            console.log(`Requesting to add \"${text2}\" to code`)
+            console.log(`Requesting to add \"${text2}\" to code at ${charStart}`)
 
             //Send the information about the addition
             outerSocket.current.emit('add', { id: sessionID, username: user, atChar: charStart, text: text2, editCount: editCount});
-
+        }
         //Check if the edit is some form of a removal
         }else if(type = 'cut' || type === '+delete'){
+            console.log("Data incoming...");
+            console.log(data);
 
             //Find the point where the removal starts and ends
-            charStart = lineToChar[data.from.line]+data.from.ch;
-            charEnd = lineToChar[data.to.line]+data.to.ch;
+            charStart = lineToChar(data.from.line, data.from.ch, valueFromStateManager);
+            charEnd = lineToChar(data.to.line, data.to.ch, valueFromStateManager);
+            
 
+            console.log(`Requesting to delete characters from ${charStart} to ${charEnd}`)
             //Giver the server information about the deletion
             outerSocket.current.emit('remove', { id: sessionID, username: user, fromChar: charStart, toChar: charEnd, editCount: editCount});
 
         }
-        
-        //Set the last value
-        setLastValue(value);
+
     }
     useEffect(() => {
 
@@ -124,72 +141,34 @@ function EditorStateManager({setSocket, sessionID, user}) {
 
         //Whenever the socket sees its session id, read the message
         socket.on(sessionID, (msg)=>{
+            if(msg.value){
+                //Log the recieved data
+            console.log("Editor recieved value:");
+            console.log(msg.value);
+            console.log("Editor recieved cursor position:");
+            console.log(msg.cursorLocation);
 
-            //On the first message, initialize the lastValue
-            if(msg.creation){
-                setLastValue(msg.value);  
+            
+            setValueFromStateManager(msg.value)
+            
+            if(msg.cursorLocation){
+                let place = charToLine(msg.cursorLocation, msg.value)
+                setCursorLine(place.line);
+                setCursorCharacter(place.char)
             }
-
-            //Print the new value recieved by the client from the server
-            console.log("Editor recieved:\n" + msg.value);
-
-            //Editcount in progress
-            editCount++;
-
-            //Set the value of the editor to the value sent by the server
-            setCurrentEditorValue(msg.value);
-
-            //Find the line breaks
-            let lineToChar2 = [];
-            lineToChar2.push(0);
-            for(let i = 0; i < msg.value.length;i++){
-                if(msg.value[i] === '\n'){
-                    lineToChar2.push(i+1);
-                }
             }
             
-            
-            if(msg.cursorLocation && msg.username === user){
-                let index = 0;
-                let distance = msg.cursorLocation - lineToChar2[0];
-                for(let i = 1; i <lineToChar2.length; i++){
-                    if(msg.cursorLocation-lineToChar2[i] < distance && msg.cursorLocation > lineToChar2[i]){
-                        index = i;
-                        distance = msg.cursorLocation - lineToChar2[i];
-                    }
-                }
-                
-                // console.log(`New Location: line ${index+1}, character ${msg.cursorLocation - lineToChar2[index]}`)
-                
-                // const event = new KeyboardEvent('keydown', {
-                //     keyCode1,
-                //     which: keyCode1,
-                //     bubbles: true,
-                //   });
-                // editorInstance.dispatchEvent(event);
-                
-                editorInstance.setCursor(index, msg.cursorLocation - lineToChar2[index])
-
-
-                if(msg.username === user){
-                    
-                }
-            
-
-
-            }
         });
 
         
         return () => {
             socket.disconnect();
-            
         };
 
     }, [sessionID])
 
     return (
-        <Editor language={currentLanguage} value={currentEditorValue} handleChange={handleChange} editorFunc={setEditor} />
+        <Editor language={currentLanguage} handleChange={handleChange} valueFromStateManager={valueFromStateManager} cursorCharacter={cursorCharacter} cursorLine={cursorLine}/>
      )
 }
 

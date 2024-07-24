@@ -1,0 +1,15 @@
+.console-terminal {
+    visibility: visible;
+    background-color: black;
+    color: white;
+    height: 35vh;
+    width: 45vw;
+}
+
+.line{
+    background-color: black;
+    color: white;
+    border: 0;
+    caret-color: white;
+    outline: none;
+}

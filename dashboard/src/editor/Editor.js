@@ -1,5 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react'
 
+import "./Editor.css";
+
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/clike/clike';
@@ -8,18 +10,27 @@ import 'codemirror/addon/edit/closebrackets'
 import { Controlled as ControlledEditorComponent } from 'react-codemirror2';
 
 
-function Editor({ language, value, handleChange, editorFunc}) {
+function Editor({language, handleChange, valueFromStateManager, cursorLine, cursorCharacter}) {
 
-  const componentRef = useRef(null);
+  const outerEditor = useRef();
+  const [value, setValue] = useState("Not Updated");
 
   const onChange = (editor, data, value) => {
     handleChange(editor, data, value);
+  }
 
-    if (componentRef.current) {
-      componentRef.current.focus(); // Assuming the component forwards refs and has a focus method
-  }
-    
-  }
+  useEffect(() => {
+    setValue(valueFromStateManager)
+  }, [valueFromStateManager])
+
+  useEffect(() => {
+    if(outerEditor.current && cursorLine && cursorCharacter){
+      outerEditor.current.setCursor(cursorLine, cursorCharacter)
+
+    }
+  }, [cursorCharacter, cursorLine, valueFromStateManager])
+
+
 
   return (
     <div className="editor">
@@ -37,10 +48,8 @@ function Editor({ language, value, handleChange, editorFunc}) {
           smartIndent: false, // Disable smart indentation
         }}
         editorDidMount={(editor) => {
-          editor.setSize('40vw','70vh');
-          console.log('editorDidMount:', editor);
-          componentRef.current = editor
-          editorFunc(editor);
+          outerEditor.current = editor;
+          editor.setSize('45vw','75vh');
         }}
       />
     </div>
