@@ -1,6 +1,6 @@
 .editor-all{
     display: flex;
-    background-image: radial-gradient(at 100% 0, #5adaff, #5468ff 100%);;
+    background-image: radial-gradient(at 100% 0, #5adaff, #5468ff 100%);
     flex-wrap: wrap;
     height: 100%;
     width: 100%;

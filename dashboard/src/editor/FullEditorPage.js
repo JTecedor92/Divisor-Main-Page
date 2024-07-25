@@ -7,16 +7,19 @@ import Console from './Console.js'
 function FullEditorPage() {
 
     const [sessionID, setSessionID] = useState("");
-    const [user, setuser] = useState("");
-    const [user2, setuser2] = useState("");
+    const [user, setUser] = useState("");
+    const [sessionID2, setSessionID2] = useState("");
+    const [user2, setUser2] = useState("");
 
     const tempClicked = useRef(false);
     const [tempPosition, setTempPosition] = useState({left: 0, top: 0})
     const [startPosition, setStartPosition] = useState({left: 0, top: 0})
 
+
     const [socket, setSocket] = useState();
     
     function handleSocket (sock) {
+      console.log("Socket set.");
       setSocket(sock);
     }
 
@@ -48,14 +51,18 @@ function FullEditorPage() {
 
       }} style={{left: tempPosition.left, top: tempPosition.top}}>
         <input placeholder="Session ID" onChange={(event)=>{
-  setSessionID(event.target.value)
+  setSessionID2(event.target.value)
   }}></input>
         <input placeholder="Username" onChange={(event)=>{
-  setuser2(event.target.value)
+  setUser2(event.target.value)
   }}></input>
         <button onClick={(event) =>{
-  setuser(user2);
-  socket.emit('create', {id: sessionID, username: user})
+          try{
+          setSessionID(sessionID2);
+          setUser(user2);
+          socket.emit('join', {id: sessionID2, username: user2})(user, sessionID);
+          
+          }catch(error){}
 }}>Join Session</button>
       </div>
 

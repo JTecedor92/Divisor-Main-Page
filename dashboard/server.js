@@ -19,7 +19,8 @@ const javaBoiler = "import java.util.concurrent.TimeUnit;\n\nclass Main {\n\tpub
 const keys = [];
 const docs = [];
 const docUpdates = [];
-const userInfo = [];
+
+const users = [];
 
 // app.use(express.static(path.join(__dirname, 'build')));
 
@@ -45,7 +46,7 @@ function charToLine(char, value){
             distance = char - lineToChar2[i];
         }
     }
-
+    
     return({line: index, char: char-lineToChar2[index]})
 }
 
@@ -67,25 +68,82 @@ function lineToChar(line, char, value){
 
 io.on('connection', (socket) =>{
     console.log("A user connected")
-    socket.on('create', (msg) =>{
+
+    let username;
+
+    socket.on('join', (msg) =>{
+        let multiplayer = false;
+        username = msg.username;
         if(!keys.includes(msg.id)){       
-            docs.push("hiiiii");
+            docs.push(javaBoiler);
             keys.push(msg.id);
             docUpdates.push([]);
         }
-        console.log("Message: " + JSON.stringify(msg));
-        userInfo.push([msg.username, 0]);
-        console.log("Value:");
-        console.log(docs[keys.indexOf(msg.id)]);
-        io.emit(msg.id, {value: docs[keys.indexOf(msg.id)], creation: true, cursorLocation: 1})
+
+        const temporaryUsers = []; 
+        console.log("Users");
+        console.log(users);
+        console.log(msg.id);
+
+        // users.forEach((user) => {
+
+        // });
+        
+        let index = -1;
+        for(let i = 0; i < users.length; i++){
+            if(users[i].user === username){
+                index = i;
+                break;
+            }
+        }
+        console.log("Parsing ids...");
+        for(let i = 0; i < users.length; i++){
+            console.log(users[i].currentDoc);
+            if(users[i].currentDoc === msg.id){
+                multiplayer = true;
+            }
+        }
+        if(index === -1){
+            users.push({user: username, currentDoc: msg.id})
+        }else{
+            users[index].currentDoc = msg.id;
+        }
+        
+        console.log(`To ${msg.id}` + JSON.stringify({value: docs[keys.indexOf(msg.id)], cursorLocation: 0, isMultiplayer: multiplayer}))
+        io.emit(msg.id, {value: docs[keys.indexOf(msg.id)], cursorLocation: 0, isMultiplayer: multiplayer})
     });
 
-    socket.on('delete', (msg) =>{
-        const index = keys.indexOf(msg.id);
-        if(index !== -1){
-            keys.splice(index);
-            docs.splice(index);
+    
+
+    
+    socket.on('disconnect', () => {
+        let index = -1;
+        for(let i =0; i < users.length; i++){
+            if(users[i].user === username){
+                index = i;
+            }
         }
+
+        if(index !== -1){
+            let user3 = users[index];
+
+            const leftDoc = user3.currentDoc;
+            delete users[index];
+
+            const temporaryUsers = [];  
+            for(let i =0; i < users.length; i++){
+                if(users[i].currentDoc === leftDoc){
+                    temporaryUsers.push(user[i]);
+                }
+            }
+
+            if(temporaryUsers.length === 1){
+                io.emit(leftDoc, {isMultiplayer: false});
+            }
+        }
+        
+
+        
     });
 
     socket.on('add', (msg) =>{
@@ -175,9 +233,6 @@ io.on('connection', (socket) =>{
         docs[dex] = doc;
         
         io.emit(msg.id, {value: docs[dex], cursorLocation: charToLine(msg.fromChar, docs[dex])})
-    });
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
     });
 });
 const PORT = process.env.PORT || 3001;

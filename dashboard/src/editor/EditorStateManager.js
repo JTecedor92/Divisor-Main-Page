@@ -13,7 +13,11 @@ const endpoint = "http://localhost:3001";
 
 function EditorStateManager({setSocket, sessionID, user}) {
 
-    const [currentLanguage, setCurrentLanguage] = useState("text/x-java");   
+    const [currentLanguage, setCurrentLanguage] = useState("text/x-java");
+
+    const [isMultiplayer, setIsMultiplayer] = useState(false);
+
+    const [inSession, setInSession] = useState(false);
 
     const outerSocket = useRef(null)
     const outerEditor = useRef();
@@ -23,6 +27,8 @@ function EditorStateManager({setSocket, sessionID, user}) {
     const handleKeyDown = (editor, event) => {
         count.current = 0;
     }
+
+
 
     //Managing for Editor
     const [value, setValue] = useState("Not Updated");
@@ -42,7 +48,79 @@ function EditorStateManager({setSocket, sessionID, user}) {
     let charChecker;
     let lineChecker;
 
+    function handleAddition(text, atChar){
+        // let dex = keys.indexOf(msg.id);
+        // let doc = docs[dex];
+        let doc = value;
+        //Gets an array storing updates to a given document
+        // let docUpdate = docUpdates[dex];
 
+        // let text = msg.text;
+        
+        let offset = 0;
+
+        if(text.includes("\n")){
+            let flag = false;
+            if(text === "\n" && doc.substring(atChar-1, atChar) === "{" && doc.substring(atChar, atChar+1) === "}"){
+                text = "\n\n";
+                flag = true;
+            }
+            let temp = doc.substring(0, atChar)
+            let unclosedParenthesisCount = 0;
+            for(let i = 0; i < temp.length; i++){
+                if(temp.substring(i, i+1) === '{' && (i === 0 || !(temp.substring(i-1, i) === "\\"))){
+                    unclosedParenthesisCount++;
+                }else if(temp.substring(i, i+1) === '}' && (i === 0 || (!temp.substring(i-1, i) === "\\"))){
+                    unclosedParenthesisCount--;
+                }
+            }
+            console.log("Parenthecount" + unclosedParenthesisCount);
+            offset += unclosedParenthesisCount;
+            let temp2 = "";
+            if(unclosedParenthesisCount > 0){
+                for(let j = 0; j < unclosedParenthesisCount; j++){
+                    
+                   temp2 += "\t"
+                }
+                console.log(`${temp2.length} tabs`)
+                for(let i = 0; i < text.length; i++){
+                    if(i === 0 || text[i] === "\n"){
+                        text = text.substring(0, i+1) + temp2 + text.substring(i+1, text.length);
+                        i+= temp2.length;
+                        
+                    }
+                }
+            }
+            if(flag && doc.length > atChar && doc.substring(atChar, atChar+1) === "}"){
+                text = text.substring(0, text.length - 1);
+            }
+
+        }
+
+
+        
+ 
+        try{
+            doc = doc.substring(0, atChar) +  text + doc.substring(atChar);
+            
+        }catch(error){}
+
+        if(text === "\"\"" || text === "\{\}" || text === "\(\)" || text === "\[\]" || text === "\'\'"){
+            offset += 1;
+        }
+
+        setValue(doc);
+        console.log("Returning the document (local): " + doc)
+        cursorLine.current = charToLine(atChar+text.length-offset, value).line;
+        cursorLine.current = charToLine(atChar+text.length-offset, value).char;
+
+
+        // io.emit(msg.id, {value: docs[dex], username: msg.username, cursorLocation: charToLine(msg.atChar+text.length-offset, docs[dex])})
+    
+    }
+    function handleRemoval(){
+
+    }
 
     function charToLine(char){
         let lineToChar2 = [];
@@ -95,6 +173,7 @@ function EditorStateManager({setSocket, sessionID, user}) {
 
         //Check if the type is any form of an addition
         if(type === 'paste' || type === '+input' && count.current === 0){
+            
             count.current++;
             if(!(text.length === 1 && text[0] === "")){
 
@@ -154,7 +233,6 @@ function EditorStateManager({setSocket, sessionID, user}) {
 
     }
     useEffect(() => {
-
         //When the page mounts, create a socket to connect to the server
         const socket = socketIOClient(endpoint);
 
@@ -164,8 +242,20 @@ function EditorStateManager({setSocket, sessionID, user}) {
         //Pass the socket to the FullEditorPage
         setSocket(socket);
 
+        return () => {
+            socket.disconnect();
+        };
+    }, [])
+
+    useEffect(() => {
         //Called whenever the client's session ID comes through the socket
-        socket.on(sessionID, (msg)=>{
+        console.log("Session: " + sessionID);
+        outerSocket.current.on(sessionID, (msg)=>{
+            console.log("Recieved" + msg.isMultiplayer);
+            if(msg.isMultiplayer !== undefined){
+                setIsMultiplayer(msg.isMultiplayer);
+                
+            }
             if(msg.value || msg.value === ""){
                 //Log the recieved data
                 console.log("Editor recieved value:");
@@ -176,12 +266,6 @@ function EditorStateManager({setSocket, sessionID, user}) {
                 setValue(msg.value)
                 
                 if(msg.cursorLocation){
-                    // charChecker = msg.cursorLocation.char;
-                    // lineChecker = msg.cursorLocation.line;
-                    // setCursorLine(msg.cursorLocation.line);
-                    // setCursorCharacter(msg.cursorLocation.char)
-                    // console.log("Line checker is " + lineChecker);
-                    // console.log("char checker is " + charChecker)
                     cursorLine.current = msg.cursorLocation.line;
                     cursorCharacter.current = msg.cursorLocation.char;
                     try{
@@ -192,9 +276,10 @@ function EditorStateManager({setSocket, sessionID, user}) {
             } 
         });
         
-        return () => {
-            socket.disconnect();
-        };
+        return () =>{
+
+        }
+        
 
     }, [sessionID])
 
