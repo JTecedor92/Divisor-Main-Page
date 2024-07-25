@@ -117,31 +117,32 @@ io.on('connection', (socket) =>{
 
     
     socket.on('disconnect', () => {
-        let index = -1;
-        for(let i =0; i < users.length; i++){
-            if(users[i].user === username){
-                index = i;
-            }
-        }
-
-        if(index !== -1){
-            let user3 = users[index];
-
-            const leftDoc = user3.currentDoc;
-            delete users[index];
-
-            const temporaryUsers = [];  
+        if(username){
+            let index = -1;
             for(let i =0; i < users.length; i++){
-                if(users[i].currentDoc === leftDoc){
-                    temporaryUsers.push(user[i]);
+                if(users[i].user === username){
+                    index = i;
                 }
             }
 
-            if(temporaryUsers.length === 1){
-                io.emit(leftDoc, {isMultiplayer: false});
+            if(index !== -1){
+                let user3 = users[index];
+
+                const leftDoc = user3.currentDoc;
+                delete users[index];
+
+                const temporaryUsers = [];  
+                for(let i =0; i < users.length; i++){
+                    if(users[i].currentDoc === leftDoc){
+                        temporaryUsers.push(user[i]);
+                    }
+                }
+
+                if(temporaryUsers.length === 1){
+                    io.emit(leftDoc, {isMultiplayer: false});
+                }
             }
         }
-        
 
         
     });
@@ -214,7 +215,9 @@ io.on('connection', (socket) =>{
 
         console.log("Returning the document: " + doc)
         console.log((msg.atChar+text.length-offset))
-        io.emit(msg.id, {value: docs[dex], username: msg.username, cursorLocation: charToLine(msg.atChar+text.length-offset, docs[dex])})
+        if(msg.respond){
+            io.emit(msg.id, {value: docs[dex], username: msg.username, cursorLocation: charToLine(msg.atChar+text.length-offset, docs[dex])})
+        }
     });
     socket.on('remove', (msg) =>{
         console.log('ID: ' + msg.id);
@@ -231,8 +234,9 @@ io.on('connection', (socket) =>{
 
         }
         docs[dex] = doc;
-        
-        io.emit(msg.id, {value: docs[dex], cursorLocation: charToLine(msg.fromChar, docs[dex])})
+        if(msg.respond){
+            io.emit(msg.id, {value: docs[dex], cursorLocation: charToLine(msg.fromChar, docs[dex])})
+        }
     });
 });
 const PORT = process.env.PORT || 3001;

@@ -48,6 +48,8 @@ function EditorStateManager({setSocket, sessionID, user}) {
     let charChecker;
     let lineChecker;
 
+    
+
     function handleAddition(text, atChar){
         // let dex = keys.indexOf(msg.id);
         // let doc = docs[dex];
@@ -118,8 +120,17 @@ function EditorStateManager({setSocket, sessionID, user}) {
         // io.emit(msg.id, {value: docs[dex], username: msg.username, cursorLocation: charToLine(msg.atChar+text.length-offset, docs[dex])})
     
     }
-    function handleRemoval(){
+    function handleRemoval(fromChar, toChar){
+        // console.log('ID: ' + msg.id);
+        // console.log('From Character: ' + msg.fromChar);
+        // console.log('To Character: ' + msg.toChar);
+        // let dex = keys.indexOf(msg.id);
+        let doc = value;
+        //Gets an array storing updates to a given document
+        // let docUpdate = docUpdates[dex];
+        doc = doc.substring(0, fromChar) + doc.substring(toChar);
 
+        setValue(doc);
     }
 
     function charToLine(char){
@@ -173,61 +184,124 @@ function EditorStateManager({setSocket, sessionID, user}) {
 
         //Check if the type is any form of an addition
         if(type === 'paste' || type === '+input' && count.current === 0){
-            
             count.current++;
-            if(!(text.length === 1 && text[0] === "")){
 
-            //Find the location of the character where the edit occurs
-            charStart = lineToChar(data.from.line, data.from.ch, value)
-            
-            //Run this code if an a newline was requested
-            if(text.length > 1 && text[0] === "" && text[1] === ""){
-                text2 = "\n";
-            }else{
-                
-                //If one of a certain group of characters are typed, automatically close them
-                if(text.length === 1){
-                    if(text[0] === "\{"){
-                        text[0] = "{}";
-                    }else if(text[0] === "\(" ){
-                        text[0] = "()";
-                    }else if(text[0] === '\['){
-                        text[0] = "[]";
-                    }if(text[0] === "\"" || text[0] === "\'"){
-                        text[0] += text[0];
+            if(isMultiplayer){
+                if(!(text.length === 1 && text[0] === "")){
+                    //Find the location of the character where the edit occurs
+                    charStart = lineToChar(data.from.line, data.from.ch, value)
+                    
+                    //Run this code if an a newline was requested
+                    if(text.length > 1 && text[0] === "" && text[1] === ""){
+                        text2 = "\n";
+                    }else{
+                        
+                        //If one of a certain group of characters are typed, automatically close them
+                        if(text.length === 1){
+                            if(text[0] === "\{"){
+                                text[0] = "{}";
+                            }else if(text[0] === "\(" ){
+                                text[0] = "()";
+                            }else if(text[0] === '\['){
+                                text[0] = "[]";
+                            }if(text[0] === "\"" || text[0] === "\'"){
+                                text[0] += text[0];
+                            }
+                        }
+
+                        //For multi-line additions, add line breaks at the end of each line
+                        text2 = "";
+                        for(let i = 0; i <text.length;i++){
+                            text2 += text[i];
+                            if(i !== text.length - 1){
+                                text2 += '\n';
+                            }
+                        }
                     }
+                    
+                    
+                    //Console log the text being sent to the server for addition
+                    console.log(`Requesting to add \"${text2}\" to code at ${charStart}`)
+
+                    //Send the information about the addition
+                    outerSocket.current.emit('add', { id: sessionID, username: user, atChar: charStart, text: text2, editCount: editCount, respond: true});
                 }
+            }else{
+                if(!(text.length === 1 && text[0] === "")){
+                    //Find the location of the character where the edit occurs
+                    charStart = lineToChar(data.from.line, data.from.ch, value)
+                    
+                    //Run this code if an a newline was requested
+                    if(text.length > 1 && text[0] === "" && text[1] === ""){
+                        text2 = "\n";
+                    }else{
+                        
+                        //If one of a certain group of characters are typed, automatically close them
+                        if(text.length === 1){
+                            if(text[0] === "\{"){
+                                text[0] = "{}";
+                            }else if(text[0] === "\(" ){
+                                text[0] = "()";
+                            }else if(text[0] === '\['){
+                                text[0] = "[]";
+                            }if(text[0] === "\"" || text[0] === "\'"){
+                                text[0] += text[0];
+                            }
+                        }
 
-                //For multi-line additions, add line breaks at the end of each line
-                text2 = "";
-                for(let i = 0; i <text.length;i++){
-                    text2 += text[i];
-                    if(i !== text.length - 1){
-                        text2 += '\n';
+                        //For multi-line additions, add line breaks at the end of each line
+                        text2 = "";
+                        for(let i = 0; i <text.length;i++){
+                            text2 += text[i];
+                            if(i !== text.length - 1){
+                                text2 += '\n';
+                            }
+                        }
                     }
+                    
+                    
+                    //Console log the text being sent to the server for addition
+                    console.log(`Requesting to add \"${text2}\" to code at ${charStart}`)
+
+                    //Send the information about the addition
+                    handleAddition(text2, charStart);
+                    // outerSocket.current.emit('add', { id: sessionID, username: user, atChar: charStart, text: text2, editCount: editCount});
+
+                    outerSocket.current.emit('add', { id: sessionID, username: user, atChar: charStart, text: text2, editCount: editCount, respond: false});
                 }
             }
-            
-            
-            //Console log the text being sent to the server for addition
-            console.log(`Requesting to add \"${text2}\" to code at ${charStart}`)
-
-            //Send the information about the addition
-            outerSocket.current.emit('add', { id: sessionID, username: user, atChar: charStart, text: text2, editCount: editCount});
-        }
+                
         //Check if the edit is some form of a removal
         }else if(type === 'cut' || type === '+delete'){
-            console.log("Data incoming...");
-            console.log(data);
-
-            //Find the point where the removal starts and ends
-            charStart = lineToChar(data.from.line, data.from.ch, value);
-            charEnd = lineToChar(data.to.line, data.to.ch, value);
             
+            if(isMultiplayer){
+                console.log("Data incoming...");
+                console.log(data);
 
-            console.log(`Requesting to delete characters from ${charStart} to ${charEnd}`)
-            //Giver the server information about the deletion
-            outerSocket.current.emit('remove', { id: sessionID, username: user, fromChar: charStart, toChar: charEnd, editCount: editCount});
+                //Find the point where the removal starts and ends
+                charStart = lineToChar(data.from.line, data.from.ch, value);
+                charEnd = lineToChar(data.to.line, data.to.ch, value);
+                
+
+                console.log(`Requesting to delete characters from ${charStart} to ${charEnd}`)
+                //Giver the server information about the deletion
+                outerSocket.current.emit('remove', { id: sessionID, username: user, fromChar: charStart, toChar: charEnd, editCount: editCount, respond:true})
+            }else{
+                console.log("Data incoming...");
+                console.log(data);
+
+                //Find the point where the removal starts and ends
+                charStart = lineToChar(data.from.line, data.from.ch, value);
+                charEnd = lineToChar(data.to.line, data.to.ch, value);
+                
+
+                console.log(`Requesting to delete characters from ${charStart} to ${charEnd}`)
+
+                handleRemoval(charStart, charEnd);
+                //Giver the server information about the deletion
+                outerSocket.current.emit('remove', { id: sessionID, username: user, fromChar: charStart, toChar: charEnd, editCount: editCount, respond:false})
+            }
+            
 
         }
 
