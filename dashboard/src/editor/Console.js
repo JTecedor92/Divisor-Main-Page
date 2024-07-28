@@ -12,25 +12,18 @@ function addLine(text) {
         )
     
 }
-const handleStroke = (event) => {
-    if(lines[lines.length-1]){
-        if(event.key === 'ArrowLeft'){
-            //do move left here
-        }else if(event.key === 'ArrowRight'){
-            //Do move right here
-        }else if(event.key === 'Delete'){
-            //Do delete behavior here
-        }else if(event.key.length === 1 && /[a-zA-Z]/.test(event.key)){
-            //Do letter behaviors here
-        }
-    }
-}
+
+
 function Console() {
     
     const [currentLine, setCurrentLine] = useState("");
     const [currentCursorPosition, setCurrentCursorPosition] = useState(0);
     useEffect(() => {
-
+        addLine("Hi");
+        addLine("Hi");
+        addLine("Hi");
+        addLine("Hi");
+        addLine("Hi");
 
         return () =>{
             console.log("Cleanup lol")
@@ -38,19 +31,13 @@ function Console() {
     }, [])
 
   return (
-    <div className='console-terminal' onKeyDown={handleStroke}>
+    <div className='console-terminal' >
         {lines.map((element) => (
         element
       ))}
       <div>
         {currentLine}
       </div>
-      {/* Cursor should blink when terminal is in focus */}
-      {/* <div className='caret'>
-        
-      </div> */}
-      <input className='line'>
-      </input>
     </div>
   )
 }

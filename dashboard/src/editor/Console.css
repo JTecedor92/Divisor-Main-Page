@@ -1,15 +1,12 @@
 .console-terminal {
     visibility: visible;
+    box-shadow: rgba(45, 35, 66, 0.3) -4px 8px 12px;
     background-color: black;
     color: white;
     height: 35vh;
     width: 45vw;
 }
 
-.line{
-    background-color: black;
-    color: white;
-    border: 0;
-    caret-color: white;
-    outline: none;
+.console-line {
+    margin: 5px;
 }
