@@ -34,6 +34,7 @@ io.on('connection', (socket) =>{
         if(!keys.includes(msg.id)){       
             docs.push(javaBoiler);
             keys.push(msg.id);
+            changes.push([]);
         }
 
         const temporaryUsers = []; 
@@ -132,8 +133,12 @@ io.on('connection', (socket) =>{
         //Identify working document
         const index = keys.indexOf(msg.id);
         let doc = docs[index];
+        let changes2 = changes[index];
 
-        console.log("Recieved a request to add from ")
+        console.log(msg.username + ":");
+        console.log(msg.extraInfo);
+        console.log("Current doc:");
+        console.log(doc);
 
 
         //1. Calculate the character offset of every change that is after lastChange and was not made by the user
@@ -151,9 +156,9 @@ io.on('connection', (socket) =>{
 
 
 
-        if(changes.length !== 0 && !(msg.lastChange.number === changes[changes.length - 1].number && msg.lastChange.username === changes[changes.length - 1].username)){
-            for(let i = changes.length - 2; i > -1; i--){
-                const change = changes[i];
+        if(changes2.length !== 0 && !(msg.lastChange.number === changes2[changes2.length - 1].number && msg.lastChange.username === changes2[changes2.length - 1].username)){
+            for(let i = changes2.length - 1; i > -1; i--){
+                const change = changes2[i];
                 if(change.number === msg.lastChange.number && change.username === msg.lastChange.username){
                     // index = i;
                     console.log("User's last recorded change: " + JSON.stringify(msg.lastChange));
@@ -178,14 +183,18 @@ io.on('connection', (socket) =>{
                     }
                 }
             }
-            console.log("Calculated an offset of: " + offset)
+            console.log("Would have placed it at:")
+            console.log(handleOtherUserAddition(doc, msg.text, msg.atChar));
+            console.log("Placed it at:")
+            console.log(handleOtherUserAddition(doc, msg.text, msg.atChar + offset));
         }
 
 
 
         //2. Apply the offset and make the change
         docs[index] = handleOtherUserAddition(doc, msg.text, msg.atChar + offset);
-
+        console.log("Changed doc to:");
+        console.log(docs[index]);
 
         //3. Send the change to all users on the document
         io.emit(msg.id, {type: 'add', atChar: msg.atChar+offset, text: msg.text, username: msg.username, number: msg.editNumber});
@@ -195,28 +204,32 @@ io.on('connection', (socket) =>{
         //4. (On user-end) Offset the recieved change by the offset of all changes user made that had not yet been recieved from server
 
         //type: true for addition, false for deletion
-        changes.push({type: true, username: msg.username, number: msg.editNumber, atChar: msg.atChar+offset, text: msg.text})
+        console.log("Adding change: " + JSON.stringify({type: true, username: msg.username, number: msg.editNumber, atChar: msg.atChar+offset, text: msg.text}))
+        changes2.push({type: true, username: msg.username, number: msg.editNumber, atChar: msg.atChar+offset, text: msg.text})
 
     });
     socket.on('remove', (msg) =>{
 
                 //Identify working document
         const index = keys.indexOf(msg.id);
-        console.log(docs);
         let doc = docs[index];
         
+        let changes2 = changes[index];
         
          //1. Calculate the character offset of every change that is after lastChange and was not made by the user
         //(lastChange is the last change that the user recieved from the server)
         //If before change- additions add characters, removals remove
-        console.log(msg.lastChange);
+        console.log(msg.username + ":");
+        console.log(msg.extraInfo);
+        console.log("Current doc:");
+        console.log(doc);
 
         let offset = 0;
 
 
-        if(changes.length !== 0 && !(msg.lastChange.number === changes[changes.length - 1].number && msg.lastChange.username === changes[changes.length - 1].username)){
-            for(let i = changes.length - 2; i > -1; i--){
-                const change = changes[i];
+        if(changes2.length !== 0 && !(msg.lastChange.number === changes2[changes2.length - 1].number && msg.lastChange.username === changes2[changes2.length - 1].username)){
+            for(let i = changes2.length - 2; i > -1; i--){
+                const change = changes2[i];
                 if(change.number === msg.lastChange.number && change.username === msg.lastChange.username){
                     // index = i;
                     console.log("User's last recorded change: " + msg.lastChange);
@@ -241,7 +254,10 @@ io.on('connection', (socket) =>{
                     }
                 }
             }
-            console.log("Calculated an offset of: offset")
+            console.log("Would have removed it at:")
+            console.log(handleOtherUserRemoval(doc, msg.startChar+offset, msg.endChar));
+            console.log("Removed it at:")
+            console.log(handleOtherUserRemoval(doc, msg.startChar+offset, msg.endChar+offset));
         }
 
             // console.log(changes);
@@ -270,7 +286,8 @@ io.on('connection', (socket) =>{
         //2. Apply the offset and make the change
         
         docs[index] = handleOtherUserRemoval(doc, msg.startChar+offset, msg.endChar+offset);
-        
+        console.log("Changed doc to:");
+        console.log(docs[index]);
         
         //3. Send the change to all users on the document
         io.emit(msg.id, {type: 'remove', startChar: msg.startChar, endChar: msg.endChar, username: msg.username, number: msg.editNumber});
@@ -282,7 +299,8 @@ io.on('connection', (socket) =>{
 
 
         //TODO: fix this bs
-        changes.push({type: false, username: msg.username, number: msg.editNumber, startChar: msg.startChar, endChar: msg.endChar})
+        console.log("Adding Change: " + JSON.stringify({type: false, username: msg.username, number: msg.editNumber, startChar: msg.startChar, endChar: msg.endChar}))
+        changes2.push({type: false, username: msg.username, number: msg.editNumber, startChar: msg.startChar, endChar: msg.endChar})
     });
 });
 const PORT = process.env.PORT || 3001;

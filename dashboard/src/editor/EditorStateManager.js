@@ -24,12 +24,13 @@ function EditorStateManager({setSocket, sessionID, user}) {
     const cursorCharacter = useRef(0)
     const editNumber = useRef(0);
     const lastMyChange = useRef(undefined);
+    const myChangesRecieved = useRef(0);
 
     const preventCursor = useRef(false);
 
     const lastOtherChange = useRef({username: undefined, number: undefined});
     
-    const changes = [];    
+    const changes = useRef([]);    
     
     const count = useRef(0);
 
@@ -58,7 +59,6 @@ function EditorStateManager({setSocket, sessionID, user}) {
         outerEditor.current.setCursor(line, char);
         cursorLine.current = line;
         cursorCharacter.current = char;
-        console.trace();
     }
 
 
@@ -79,6 +79,9 @@ function EditorStateManager({setSocket, sessionID, user}) {
             count.current++;
             if(!(text.length === 1 && text[0] === "")){
                 //Find the location of the character where the edit occurs
+                
+                let temporary = value;
+
                 const charStart = lineToChar(valueRef.current, data.from.line, data.from.ch)
                 const dataString = dataToString(text)
                 const addData = handleAddition(valueRef.current, dataString, charStart);
@@ -98,16 +101,20 @@ function EditorStateManager({setSocket, sessionID, user}) {
                 console.log("Sending: ");
                 console.log({id: sessionID, username: user, atChar: charStart, text: addData.inserted, lastChange: lastOtherChange.current, editNumber: editNumber.current})
 
-                outerSocket.current.emit('add', {id: sessionID, username: user, atChar: charStart, text: addData.inserted, lastChange: lastOtherChange.current, editNumber: editNumber.current});
+                temporary = temporary.substring(0, charStart) + `{+${addData.inserted}+}` + temporary.substring(charStart);
+
+                outerSocket.current.emit('add', {extraInfo: temporary, id: sessionID, username: user, atChar: charStart, text: addData.inserted, lastChange: lastOtherChange.current, editNumber: editNumber.current});
                 editNumber.current += 1;
 
                 //Do this last
-                changes.push({type: 'add', atChar: charStart, inserted: addData.inserted});
+                changes.current.push({type: 'add', atChar: charStart, inserted: addData.inserted});
+                console.log("Increased changes.length to " + changes.current.length);
             }
                 
         //Check if the edit is some form of a removal
         }else if(type === 'cut' || type === '+delete'){
 
+            let temporary = value;
 
             //Find the point where the removal starts and ends
             const charStart = lineToChar(valueRef.current, data.from.line, data.from.ch);
@@ -127,11 +134,14 @@ function EditorStateManager({setSocket, sessionID, user}) {
                 console.log("Sending: ");
                 console.log({id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current});
 
-                outerSocket.current.emit('remove', {id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current});
+                temporary = temporary.substring(0, charStart) + `{_${temporary.substring(charStart, charEnd)}_}` + temporary.substring(charEnd);
+
+                outerSocket.current.emit('remove', {extraInfo: temporary, id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current});
                 editNumber.current += 1;
 
                 //Do this last
-                changes.push({type: 'delete', startChar: charStart, endChar: charEnd});
+                changes.current.push({type: 'delete', startChar: charStart, endChar: charEnd});
+                console.log("Increased changes.length to " + changes.length);
             }
         }
     }
@@ -166,6 +176,8 @@ function EditorStateManager({setSocket, sessionID, user}) {
                 console.log(user);
                 if(msg.username === user){
                     lastMyChange.current = msg.number;
+                    myChangesRecieved.current++;
+                    console.log("Incremented myChangesRecieved to " + myChangesRecieved.current)
                 }else{
                     let location;
                     if(msg.startChar !== undefined){
@@ -178,11 +190,11 @@ function EditorStateManager({setSocket, sessionID, user}) {
                     
                     let offset = 0;
                     if(lastMyChange.current !== undefined){
-                        let missedChangesNum = changes.length - 1 - lastMyChange.current;
-                        
+                        let missedChangesNum = changes.current.length - myChangesRecieved.current;
+                        console.log("Found discrepancy of length " + missedChangesNum);
                         if(missedChangesNum !== 0){
                             for(let i = 0; i < missedChangesNum; i++){
-                                const undoChange = changes[changes.length - 1 - i];
+                                const undoChange = changes.current[changes.current.length - 1 - i];
 
                                 if(undoChange.type === 'delete'){
                                     if(undoChange.endChar < location){
