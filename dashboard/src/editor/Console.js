@@ -1,21 +1,14 @@
 import React from 'react'
-import {useEffect, useState} from 'react'
+import {useEffect, useState, useRef} from 'react'
 import './Console.css'
 
-const lines = []
 
 
-function addLine(text) {
-        lines.push(<div className='console-line' key={lines.length.toString}> 
-                {text}
-            </div>
-        )
-    
-}
+
 
 
 function Console() {
-    
+    const lines = useRef([]);
     const [currentLine, setCurrentLine] = useState("");
     const [currentCursorPosition, setCurrentCursorPosition] = useState(0);
     useEffect(() => {
@@ -32,7 +25,7 @@ function Console() {
 
   return (
     <div className='console-terminal' >
-        {lines.map((element) => (
+        {lines.current.map((element) => (
         element
       ))}
       <div>
@@ -40,6 +33,16 @@ function Console() {
       </div>
     </div>
   )
+  
+function addLine(text) {
+  lines.current.push(<div className='console-line' key={lines.current.length}> 
+          {text}
+      </div>
+  )
+
 }
+}
+
+
 
 export default Console

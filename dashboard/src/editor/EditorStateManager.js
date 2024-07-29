@@ -11,7 +11,7 @@ import { Controlled as ControlledEditor} from 'react-codemirror2';
 
 const endpoint = "http://localhost:3001";
 
-function EditorStateManager({setSocket, sessionID, user}) {
+function EditorStateManager({setFunction, setSocket, sessionID, user}) {
 
     const [currentLanguage, setCurrentLanguage] = useState("text/x-java");
     const valueRef = useRef("Not Updated");
@@ -47,6 +47,10 @@ function EditorStateManager({setSocket, sessionID, user}) {
             cursorLine.current = cursor.line;
         }
 
+    }
+    
+    function getHighlighted ()  {
+        console.log(window.getSelection());
     }
 
 
@@ -87,7 +91,6 @@ function EditorStateManager({setSocket, sessionID, user}) {
                 const addData = handleAddition(valueRef.current, dataString, charStart);
 
                 setValue(addData.newValue);
-
                 setCursor(addData.cursorLine, addData.cursorCharacter);
 
                 
@@ -154,6 +157,7 @@ function EditorStateManager({setSocket, sessionID, user}) {
 
         //Pass the socket to the FullEditorPage
         setSocket(socket);
+        setFunction(getHighlighted);
 
         return () => {
             socket.disconnect();

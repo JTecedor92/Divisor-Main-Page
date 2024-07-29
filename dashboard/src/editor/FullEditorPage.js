@@ -12,6 +12,7 @@ function FullEditorPage() {
     const [user2, setUser2] = useState("");
 
     const tempClicked = useRef(false);
+    const [testFunction, setTestFunction] = useState(undefined);
     const [tempPosition, setTempPosition] = useState({left: 0, top: 0})
     const [startPosition, setStartPosition] = useState({left: 0, top: 0})
 
@@ -53,6 +54,13 @@ function FullEditorPage() {
         <input placeholder="Session ID" onChange={(event)=>{
   setSessionID2(event.target.value)
   }}></input>
+  <button onClick={(event) =>{
+          try{
+            testFunction();  
+          }catch(error){
+            console.log(error);
+          }
+}}>Button For Testing</button>
         <input placeholder="Username" onChange={(event)=>{
   setUser2(event.target.value)
   }}></input>
@@ -82,7 +90,7 @@ function FullEditorPage() {
         <div className='editor-right'>
 
           <div className='editor-editor'>
-            <EditorStateManager sessionID={sessionID} user={user} setSocket={handleSocket}/>
+            <EditorStateManager setFunction={setTestFunction} sessionID={sessionID} user={user} setSocket={handleSocket}/>
           </div>
 
         </div>

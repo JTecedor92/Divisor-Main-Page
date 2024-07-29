@@ -228,12 +228,12 @@ io.on('connection', (socket) =>{
 
 
         if(changes2.length !== 0 && !(msg.lastChange.number === changes2[changes2.length - 1].number && msg.lastChange.username === changes2[changes2.length - 1].username)){
-            for(let i = changes2.length - 2; i > -1; i--){
+            console.log("Discrepancy found");
+            for(let i = changes2.length - 1; i > -1; i--){
                 const change = changes2[i];
+                console.log("Comparing users change " + JSON.stringify(msg.lastChange))
+                console.log("with server's change " + JSON.stringify(change))
                 if(change.number === msg.lastChange.number && change.username === msg.lastChange.username){
-                    // index = i;
-                    console.log("User's last recorded change: " + msg.lastChange);
-                    console.log("Server's last recorded change: " + change);
                     
                     break;
                 }
@@ -243,12 +243,13 @@ io.on('connection', (socket) =>{
             
                         //Depending on behavior, <= may be a better choice
                         if(change.atChar < msg.atChar){
+                            console.log("Offset by " + change.text.length);
                             offset += change.text.length;
                         }
                     }else{
                         //For deletions
-            
                         if(change.endChar < msg.atChar){
+                            console.log("Offset by " + (change.endChar - change.startChar))
                             offset -= (change.endChar - change.startChar);
                         }
                     }
