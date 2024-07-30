@@ -43,6 +43,7 @@ function EditorStateManager({setFunction, setSocket, sessionID, user}) {
             preventCursor.current = false;
         }else{
             const cursor = editor.getCursor();
+            console.log(`editor set cursor to ${cursor.line} ${cursor.ch}`)
             cursorCharacter.current = cursor.ch;
             cursorLine.current = cursor.line;
         }
@@ -60,9 +61,11 @@ function EditorStateManager({setFunction, setSocket, sessionID, user}) {
     }
     
     function setCursor(line, char){
+        console.log(`Old cursor location ln: ${cursorLine.current}, char: ${cursorCharacter.current}`)
         outerEditor.current.setCursor(line, char);
         cursorLine.current = line;
         cursorCharacter.current = char;
+        console.log(`New cursor location ln: ${cursorLine.current}, char: ${cursorCharacter.current}`)
     }
 
 
@@ -222,9 +225,11 @@ function EditorStateManager({setFunction, setSocket, sessionID, user}) {
                     if(msg.type === 'remove'){
                         preventCursor.current= false;
                         const removalObject = handleOtherUserRemoval(valueRef.current, msg.startChar + offset, msg.endChar + offset);
+
                         let currentPosition = lineToChar(valueRef.current, cursorLine.current, cursorCharacter.current);
                         if(msg.endChar < currentPosition){
-                            currentPosition -= (msg.endChar - msg.startChar);
+                            console.log(currentPosition);
+                            // currentPosition -= (msg.endChar - msg.startChar);
                             const lineObject = charToLine(valueRef.current, currentPosition);
                             setCursor(lineObject.line, lineObject.char);
                         }
@@ -235,9 +240,11 @@ function EditorStateManager({setFunction, setSocket, sessionID, user}) {
                     }else if(msg.type === 'add'){
                         preventCursor.current= false;
                         const additionObject = handleOtherUserAddition(valueRef.current, msg.text, msg.atChar + offset);
+
                         let currentPosition = lineToChar(valueRef.current, cursorLine.current, cursorCharacter.current);
                         if(msg.atChar < currentPosition){
-                            currentPosition += (msg.text.length);
+                            console.log(currentPosition);
+                            // currentPosition += (msg.text.length);
                             console.log(currentPosition);
                             console.log(msg.text.length);
                             const lineObject = charToLine(valueRef.current, currentPosition);
@@ -398,7 +405,8 @@ function charToLine(text, char){
             distance = char - lineToChar2[i];
         }
     }
-
+    console.log("Recieved character " + char);
+    console.log(lineToChar2);
     return({line: index, char: char-lineToChar2[index]})
 }
 
