@@ -75,9 +75,12 @@ function FullEditorPage() {
           try{
           setSessionID(sessionID2);
           setUser(user2);
+          console.log("Sending join req");
           socket.emit('join', {id: sessionID2, username: user2})(user, sessionID);
           
-          }catch(error){}
+          }catch(error){
+            console.log(error);
+          }
 }}>Join Session</button>
       </div>
 

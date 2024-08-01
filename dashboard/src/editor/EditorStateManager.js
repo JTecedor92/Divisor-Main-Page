@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef} from 'react'
-import Editor from './Editor';
+import './EditorStateManager.css'
 import socketIOClient from 'socket.io-client';
 
 import 'codemirror/lib/codemirror.css';
@@ -7,6 +7,7 @@ import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/clike/clike';
 import 'codemirror/mode/css/css';
 import 'codemirror/addon/edit/closebrackets'
+// import { highlightSelectionMatches } from 'codemirror/addon/selection/active-line';
 import { Controlled as ControlledEditor} from 'react-codemirror2';
 
 const endpoint = "http://localhost:3001";
@@ -14,11 +15,16 @@ const endpoint = "http://localhost:3001";
 function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
     const [currentLanguage, setCurrentLanguage] = useState("text/x-java");
-    const valueRef = useRef("Not Updated");
+    const valueRef = useRef("Not Updated\nNot Updated");
     const [value, setValue2] = useState(valueRef.current);
 
     const outerSocket = useRef(null);
     const outerEditor = useRef();
+
+    const topStyle = useRef({opacity: "50%", position: "absolute", height: "2.5vh", width: "10vw", top: "1vh", left: "4vw", backgroundColor: '#d0e6f4'})
+    const middleStyle = useRef({opacity: "40%", position: "absolute", height: "2vh", width: "10vw", top: "10vh", left: "5vw", backgroundColor: '#d0e6f4'})
+    const bottomStyle = useRef({opacity: "25%", position: "absolute", height: "2vh", width: "10vw", top: "12vh", left: "5vw", backgroundColor: '#d0e6f4'})
+
 
     const cursorLine = useRef(0)
     const cursorCharacter = useRef(0)
@@ -28,11 +34,14 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
     const preventCursor = useRef(false);
 
-    const temporaryRunCount = useRef(0);
+    const mouseIsDown = useRef(false);
+    const recordNext = useRef(false);
+    const fromLoc = useRef({line: 0, ch: 0});
+    const toLoc = useRef({line: 0, ch: 0});
 
-    const lastOtherChange = useRef({username: undefined, number: undefined});
+    const lastOtherChange = useRef({username: "initial", number: undefined});
     
-    const changes = useRef([]);    
+    const changes = useRef([]); 
     
     const count = useRef(0);
 
@@ -44,16 +53,61 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
             setCursor(cursorLine.current, cursorCharacter.current);
             preventCursor.current = false;
         }else{
+            
             const cursor = editor.getCursor();
-            console.log(`editor set cursor to ${cursor.line} ${cursor.ch}`)
-            cursorCharacter.current = cursor.ch;
-            cursorLine.current = cursor.line;
+            setCursor(cursor.line, cursor.ch);
+            if(recordNext.current){
+                fromLoc.current = {line: cursor.line, ch: cursor.ch};
+                toLoc.current = {line: cursor.line, ch: cursor.ch};
+                recordNext.current = false;
+            }
+            if(mouseIsDown.current){
+                console.log("Mouse is down");
+                if(lineToChar(valueRef.current, cursor.line, cursor.ch) < lineToChar(valueRef.current, fromLoc.current.line, fromLoc.current.ch)){
+                    fromLoc.current = {line: cursor.line, ch: cursor.ch};
+                }else if(lineToChar(valueRef.current, cursor.line, cursor.ch) > lineToChar(valueRef.current, fromLoc.current.line, fromLoc.current.ch)){
+                    toLoc.current = {line: cursor.line, ch: cursor.ch};
+                }
+                
+                if(!(toLoc.current.line === fromLoc.current.line && toLoc.current.ch === fromLoc.current.ch)){
+                    highlightRange(fromLoc.current, toLoc.current);
+                }else{
+                    clearHighlights();
+                }
+            }
+            // console.log(`Current highlight is from ${JSON.stringify(fromLoc.current)} and to ${JSON.stringify(toLoc.current)}`)
+            // console.log(`editor set cursor to ${cursor.line} ${cursor.ch}`)
+            // cursorCharacter.current = cursor.ch;
+            // cursorLine.current = cursor.line;
         }
 
     }
-    
-    function getHighlighted ()  {
-        console.log(window.getSelection());
+
+    const handleMouseDown = () => {
+        // console.log("mouse down function");
+        mouseIsDown.current = true;
+        recordNext.current = true;
+        clearHighlights();
+    }
+
+    const handleMouseUp = () => {
+        mouseIsDown.current = false;
+    }
+
+    function highlightRange (startPos, endPos){
+
+        
+        clearHighlights();
+
+        outerEditor.current.getDoc().markText(
+            startPos, endPos, {className: 'highlighted-text'}
+        )
+    }
+    function clearHighlights(){
+        // console.log("Clear highlights called");
+        outerEditor.current.getDoc().getAllMarks().forEach(marks => {
+            marks.clear();
+        })
     }
 
 
@@ -63,11 +117,11 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
     }
     
     function setCursor(line, char){
-        console.log(`Old cursor location ln: ${cursorLine.current}, char: ${cursorCharacter.current}`)
+        // console.log(`Old cursor location ln: ${cursorLine.current}, char: ${cursorCharacter.current}`)
         outerEditor.current.setCursor(line, char);
         cursorLine.current = line;
         cursorCharacter.current = char;
-        console.log(`New cursor location ln: ${cursorLine.current}, char: ${cursorCharacter.current}`)
+        // console.log(`New cursor location ln: ${cursorLine.current}, char: ${cursorCharacter.current}`)
     }
 
     // function runCode ()  {
@@ -114,8 +168,8 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
                 //Props: id, username, change num , change info
 
                 //Send the information about the addition
-                console.log("Sending: ");
-                console.log({id: sessionID, username: user, atChar: charStart, text: addData.inserted, lastChange: lastOtherChange.current, editNumber: editNumber.current})
+                // console.log("Sending: ");
+                // console.log({id: sessionID, username: user, atChar: charStart, text: addData.inserted, lastChange: lastOtherChange.current, editNumber: editNumber.current})
 
                 temporary = temporary.substring(0, charStart) + `{+${addData.inserted}+}` + temporary.substring(charStart);
 
@@ -124,31 +178,46 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
                 //Do this last
                 changes.current.push({type: 'add', atChar: charStart, inserted: addData.inserted});
-                console.log("Increased changes.length to " + changes.current.length);
+                // console.log("Increased changes.length to " + changes.current.length);
             }
                 
         //Check if the edit is some form of a removal
         }else if(type === 'cut' || type === '+delete'){
+            
 
             let temporary = value;
 
             //Find the point where the removal starts and ends
-            const charStart = lineToChar(valueRef.current, data.from.line, data.from.ch);
-            const charEnd = lineToChar(valueRef.current, data.to.line, data.to.ch);
+            let charStart = lineToChar(valueRef.current, fromLoc.current.line, fromLoc.current.ch)
+            let charEnd = lineToChar(valueRef.current, toLoc.current.line, toLoc.current.ch)
+            if(charStart === charEnd){
+                charStart = lineToChar(valueRef.current, data.from.line, data.from.ch);
+                charEnd = lineToChar(valueRef.current, data.to.line, data.to.ch);
+            }
+            
 
 
             if(!(charStart === 0 && charEnd == 0)){
+                let flag = false;
+                if(charStart === 0 && charEnd === valueRef.current.length){
+                    // console.log("Tryong to remoce whole ass thign");
+                    charEnd -= 1;
+                    flag = true;
+                }
+                let deleteData = handleRemoval(valueRef.current, charStart, charEnd);
                 
-                const deleteData = handleRemoval(valueRef.current, charStart, charEnd);
-
+                // console.log(valueRef.current.length);
                 setValue(deleteData.newValue);
                 
                 setCursor(deleteData.cursorLine, deleteData.cursorCharacter);
+                fromLoc.current = {line: deleteData.cursorLine, ch: deleteData.cursorCharacter};
+                toLoc.current = {line: deleteData.cursorLine, ch: deleteData.cursorCharacter};
+                clearHighlights();
 
-                console.log(`Requesting to delete characters from ${charStart} to ${charEnd}`)
+                // console.log(`Requesting to delete characters from ${charStart} to ${charEnd}`)
                 //Giver the server information about the deletion
-                console.log("Sending: ");
-                console.log({id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current});
+                // console.log("Sending: ");
+                // console.log({id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current});
 
                 temporary = temporary.substring(0, charStart) + `{_${temporary.substring(charStart, charEnd)}_}` + temporary.substring(charEnd);
 
@@ -157,7 +226,36 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
                 //Do this last
                 changes.current.push({type: 'delete', startChar: charStart, endChar: charEnd});
-                console.log("Increased changes.length to " + changes.length);
+                // console.log("Increased changes.length to " + changes.length);
+
+
+                if(flag){
+                    charStart = 0;
+                    charEnd = 1;
+                    deleteData = handleRemoval(valueRef.current, charStart, charEnd);
+                
+                    // console.log(valueRef.current.length);
+                    setValue(deleteData.newValue);
+                    
+                    setCursor(deleteData.cursorLine, deleteData.cursorCharacter);
+                    fromLoc.current = {line: deleteData.cursorLine, ch: deleteData.cursorCharacter};
+                    toLoc.current = {line: deleteData.cursorLine, ch: deleteData.cursorCharacter};
+                    clearHighlights();
+
+                    console.log(`Requesting to delete characters from ${charStart} to ${charEnd}`)
+                    //Giver the server information about the deletion
+                    // console.log("Sending: ");
+                    // console.log({id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current});
+
+                    temporary = temporary.substring(0, charStart) + `{_${temporary.substring(charStart, charEnd)}_}` + temporary.substring(charEnd);
+
+                    outerSocket.current.emit('remove', {extraInfo: temporary, id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current});
+                    editNumber.current += 1;
+
+                    //Do this last
+                    changes.current.push({type: 'delete', startChar: charStart, endChar: charEnd});
+                    // console.log("Increased changes.length to " + changes.length);
+                }
             }
         }
     }
@@ -167,44 +265,58 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
         //Store the socket in a useRef to make it accessible permanently outside the scope of this useEffect call
         outerSocket.current = socket;
-
         //Pass the socket to the FullEditorPage
         setSocket(socket);
 
-        console.log(typeof addLine);
+        if(outerEditor.current){
+            // outerEditor.current.on('mouseup', handleMouseUp);
+            outerEditor.current.on('mousedown', handleMouseDown);
+
+        }
+        // Attach the event listener
+        document.addEventListener('mouseup', handleMouseUp);
+
+        // Clean up the event listener on component unmount
+      
+
+        
+
+        // console.log(typeof addLine);
         // setFunction(runCode);
 
         return () => {
             socket.disconnect();
+            document.removeEventListener('mouseup', handleMouseUp);
+
         };
     }, [])
 
     useEffect(() => {
         outerSocket.current.on('t-'+sessionID, (msg) => {
-            console.log(msg.data);
+            // console.log(msg.data);
             if(addLine !== undefined){
                 
                 
-                console.log(typeof addLine);
+                // console.log(typeof addLine);
                 addLine(msg.data);
             }
         })
         outerSocket.current.on(sessionID, (msg)=>{
-            console.log("Current value: " + valueRef.current);
+            // console.log("Current value: " + valueRef.current);
             if(msg.join){
-                console.log("Setting value to " + msg.value);
+                // console.log("Setting value to " + msg.value);
                 setValue(msg.value);
             }else {
                 console.log("Recieved:");
                 console.log(msg);
 
                 //number, props, username, sessionID
-                console.log(msg.username);
-                console.log(user);
+                // console.log(msg.username);
+                // console.log(user);
                 if(msg.username === user){
                     lastMyChange.current = msg.number;
                     myChangesRecieved.current++;
-                    console.log("Incremented myChangesRecieved to " + myChangesRecieved.current)
+                    // console.log("Incremented myChangesRecieved to " + myChangesRecieved.current)
                 }else{
                     let location;
                     if(msg.startChar !== undefined){
@@ -218,7 +330,7 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
                     let offset = 0;
                     if(lastMyChange.current !== undefined){
                         let missedChangesNum = changes.current.length - myChangesRecieved.current;
-                        console.log("Found discrepancy of length " + missedChangesNum);
+                        // console.log("Found discrepancy of length " + missedChangesNum);
                         if(missedChangesNum !== 0){
                             for(let i = 0; i < missedChangesNum; i++){
                                 const undoChange = changes.current[changes.current.length - 1 - i];
@@ -236,8 +348,8 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
                         }
                     }
                     
-                    console.log(offset);
-                    console.log(valueRef.current);
+                    // console.log(offset);
+                    // console.log(valueRef.current);
 
                     
                     //Fix blocking
@@ -248,7 +360,7 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
                         let currentPosition = lineToChar(valueRef.current, cursorLine.current, cursorCharacter.current);
                         if(msg.endChar < currentPosition){
-                            console.log(currentPosition);
+                            // console.log(currentPosition);
                             // currentPosition -= (msg.endChar - msg.startChar);
                             const lineObject = charToLine(valueRef.current, currentPosition);
                             setCursor(lineObject.line, lineObject.char);
@@ -263,10 +375,10 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
                         let currentPosition = lineToChar(valueRef.current, cursorLine.current, cursorCharacter.current);
                         if(msg.atChar < currentPosition){
-                            console.log(currentPosition);
+                            // console.log(currentPosition);
                             // currentPosition += (msg.text.length);
-                            console.log(currentPosition);
-                            console.log(msg.text.length);
+                            // console.log(currentPosition);
+                            // console.log(msg.text.length);
                             const lineObject = charToLine(valueRef.current, currentPosition);
                             setCursor(lineObject.line, lineObject.char);
                         }
@@ -277,7 +389,7 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
                     
                 }
-                console.log(lastOtherChange.current);
+                // console.log(lastOtherChange.current);
                 lastOtherChange.current.username = msg.username;
                 lastOtherChange.current.number = msg.number;
             }
@@ -292,12 +404,14 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
     }, [sessionID])
 
     useEffect(() =>{
-        console.log("Value updated to: |" + value + "|")
+        if (outerEditor.current) {
+            console.log("Value is now " + value);
+        }
     }, [value])
   
 
     return (
-        <div className="editor">
+        <div className="state-all">
             <ControlledEditor
                 onBeforeChange={handleChange}
                 onCursorActivity={handleCursorActivity}
@@ -319,6 +433,10 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
                 onKeyDown={handleKeyDown}
                 
             />
+            <div style={topStyle.current}/>
+            <div style={middleStyle.current}/>
+            <div style={bottomStyle.current}/>
+
         </div>
      )
 }
@@ -352,19 +470,19 @@ function handleAddition(text, insert, atChar){
             offset++;
         }
         let temp = text.substring(0, atChar)
-        console.log(temp);
+        // console.log(temp);
         let unclosedParenthesisCount = 0;
         for(let i = 0; i < temp.length; i++){
-            console.log(temp.substring(i, i+1) === "}");
+            // console.log(temp.substring(i, i+1) === "}");
             if(temp.substring(i, i+1) === '{' && (i === 0 || !(temp.substring(i-1, i) === "\\"))){
-                console.log(temp.substring(i, i+1));
+                // console.log(temp.substring(i, i+1));
                 unclosedParenthesisCount++;
             }else if(temp.substring(i, i+1) === '}' && (i === 0 || !(temp.substring(i-1, i) === "\\"))){
-                console.log(temp.substring(i, i+1));
+                // console.log(temp.substring(i, i+1));
                 unclosedParenthesisCount--;
             }
         }
-        console.log("count: " + unclosedParenthesisCount);
+        // console.log("count: " + unclosedParenthesisCount);
 
         offset += unclosedParenthesisCount - 1;
         let tabs = "";
@@ -430,8 +548,9 @@ function charToLine(text, char){
             distance = char - lineToChar2[i];
         }
     }
-    console.log("Recieved character " + char);
-    console.log(lineToChar2);
+    // console.log("Recieved character " + char);
+    // console.log(lineToChar2);
+    
     return({line: index, char: char-lineToChar2[index]})
 }
 

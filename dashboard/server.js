@@ -59,6 +59,7 @@ io.on('connection', (socket) =>{
     });
 
     socket.on('join', (msg) =>{
+        
         let multiplayer = false;
         username = msg.username;
         if(!keys.includes(msg.id)){       
@@ -186,7 +187,7 @@ io.on('connection', (socket) =>{
 
 
 
-        if(changes2.length !== 0 && !(msg.lastChange.number === changes2[changes2.length - 1].number && msg.lastChange.username === changes2[changes2.length - 1].username)){
+        if(msg.lastChange.username !== "initial" && changes2.length !== 0 && !(msg.lastChange.number === changes2[changes2.length - 1].number && msg.lastChange.username === changes2[changes2.length - 1].username)){
             for(let i = changes2.length - 1; i > -1; i--){
                 const change = changes2[i];
                 if(change.number === msg.lastChange.number && change.username === msg.lastChange.username){
@@ -257,7 +258,7 @@ io.on('connection', (socket) =>{
         let offset = 0;
 
 
-        if(changes2.length !== 0 && !(msg.lastChange.number === changes2[changes2.length - 1].number && msg.lastChange.username === changes2[changes2.length - 1].username)){
+        if(msg.lastChange.username !== "initial" && changes2.length !== 0 && !(msg.lastChange.number === changes2[changes2.length - 1].number && msg.lastChange.username === changes2[changes2.length - 1].username)){
             console.log("Discrepancy found");
             for(let i = changes2.length - 1; i > -1; i--){
                 const change = changes2[i];
