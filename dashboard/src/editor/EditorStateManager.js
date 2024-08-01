@@ -11,7 +11,7 @@ import { Controlled as ControlledEditor} from 'react-codemirror2';
 
 const endpoint = "http://localhost:3001";
 
-function EditorStateManager({setFunction, setSocket, sessionID, user}) {
+function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
     const [currentLanguage, setCurrentLanguage] = useState("text/x-java");
     const valueRef = useRef("Not Updated");
@@ -27,6 +27,8 @@ function EditorStateManager({setFunction, setSocket, sessionID, user}) {
     const myChangesRecieved = useRef(0);
 
     const preventCursor = useRef(false);
+
+    const temporaryRunCount = useRef(0);
 
     const lastOtherChange = useRef({username: undefined, number: undefined});
     
@@ -67,6 +69,14 @@ function EditorStateManager({setFunction, setSocket, sessionID, user}) {
         cursorCharacter.current = char;
         console.log(`New cursor location ln: ${cursorLine.current}, char: ${cursorCharacter.current}`)
     }
+
+    // function runCode ()  {
+    //     console.trace();
+    //     if(temporaryRunCount.current > 1){
+            
+    //     }
+        
+    // }
 
 
 
@@ -160,7 +170,9 @@ function EditorStateManager({setFunction, setSocket, sessionID, user}) {
 
         //Pass the socket to the FullEditorPage
         setSocket(socket);
-        setFunction(getHighlighted);
+
+        console.log(typeof addLine);
+        // setFunction(runCode);
 
         return () => {
             socket.disconnect();
@@ -168,7 +180,15 @@ function EditorStateManager({setFunction, setSocket, sessionID, user}) {
     }, [])
 
     useEffect(() => {
-        
+        outerSocket.current.on('t-'+sessionID, (msg) => {
+            console.log(msg.data);
+            if(addLine !== undefined){
+                
+                
+                console.log(typeof addLine);
+                addLine(msg.data);
+            }
+        })
         outerSocket.current.on(sessionID, (msg)=>{
             console.log("Current value: " + valueRef.current);
             if(msg.join){
@@ -332,14 +352,19 @@ function handleAddition(text, insert, atChar){
             offset++;
         }
         let temp = text.substring(0, atChar)
+        console.log(temp);
         let unclosedParenthesisCount = 0;
         for(let i = 0; i < temp.length; i++){
+            console.log(temp.substring(i, i+1) === "}");
             if(temp.substring(i, i+1) === '{' && (i === 0 || !(temp.substring(i-1, i) === "\\"))){
+                console.log(temp.substring(i, i+1));
                 unclosedParenthesisCount++;
-            }else if(temp.substring(i, i+1) === '}' && (i === 0 || (!temp.substring(i-1, i) === "\\"))){
+            }else if(temp.substring(i, i+1) === '}' && (i === 0 || !(temp.substring(i-1, i) === "\\"))){
+                console.log(temp.substring(i, i+1));
                 unclosedParenthesisCount--;
             }
         }
+        console.log("count: " + unclosedParenthesisCount);
 
         offset += unclosedParenthesisCount - 1;
         let tabs = "";

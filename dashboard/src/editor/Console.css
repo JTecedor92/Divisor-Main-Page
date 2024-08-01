@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+
 .console-terminal {
     visibility: visible;
     box-shadow: rgba(45, 35, 66, 0.3) -4px 8px 12px;
@@ -5,6 +7,12 @@
     color: white;
     height: 35vh;
     width: 45vw;
+    overflow-y: scroll;
+    font-family: 'Inconsolata', monospace;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-variation-settings: "wdth" 100;
 }
 
 .console-line {

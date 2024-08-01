@@ -16,12 +16,19 @@ function FullEditorPage() {
     const [tempPosition, setTempPosition] = useState({left: 0, top: 0})
     const [startPosition, setStartPosition] = useState({left: 0, top: 0})
 
+    const addLineFunction = useRef(undefined);
 
     const [socket, setSocket] = useState();
     
     function handleSocket (sock) {
       console.log("Socket set.");
       setSocket(sock);
+    }
+
+    function handleAddLine (func) {
+      addLineFunction.current = func;
+      console.log("Add Line set to " + typeof addLineFunction.current);
+      const func2 = addLineFunction.current;
     }
 
     useEffect(() => {
@@ -56,7 +63,7 @@ function FullEditorPage() {
   }}></input>
   <button onClick={(event) =>{
           try{
-            testFunction();  
+            socket.emit('run', {id: sessionID2});  
           }catch(error){
             console.log(error);
           }
@@ -84,13 +91,13 @@ function FullEditorPage() {
           <div className='problem-window'>
 
           </div>
-          <Console/>
+          <Console terminalFunctionSetter={handleAddLine}/>
         </div>
 
         <div className='editor-right'>
 
           <div className='editor-editor'>
-            <EditorStateManager setFunction={setTestFunction} sessionID={sessionID} user={user} setSocket={handleSocket}/>
+            <EditorStateManager addLine={addLineFunction.current} sessionID={sessionID} user={user} setSocket={handleSocket}/>
           </div>
 
         </div>

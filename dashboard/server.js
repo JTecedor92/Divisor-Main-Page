@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const path = require("path");
+const WebSocket = require('ws');
 const http = require("http");
 const server = http.createServer(app);
 const { Server } = require("socket.io");
@@ -13,7 +14,7 @@ const io = new Server(server, {
     }
 })
 
-const javaBoiler = "import java.util.concurrent.TimeUnit;\n\nclass Main {\n\tpublic static void main(String[] args){\n\t\tSystem.out.println(\"The bomb is ticking...\");\n\t\tfor(int i = 10; i > -1; i++){\n\t\t\tTimeUnit.SECONDS.sleep(1);\n\t\t\tSystem.out.println(i);\n\t\t}\n\t\tSystem.out.println(\"BOOM\");\n\t}\n}"
+const javaBoiler = "import java.util.concurrent.TimeUnit;\n\nclass Main {\n\tpublic static void main(String[] args) throws InterruptedException{\n\t\tSystem.out.println(\"The bomb is ticking...\");\n\t\tfor(int i = 10; i > -1; i--){\n\t\t\tTimeUnit.SECONDS.sleep(1);\n\t\t\tSystem.out.println(i);\n\t\t}\n\t\tSystem.out.println(\"BOOM\");\n\t}\n}"
 
 
 const keys = [];
@@ -27,6 +28,35 @@ io.on('connection', (socket) =>{
     console.log("A user connected")
 
     let username;
+
+    socket.on('run', (msg) => {
+        console.log("Recieved a request to run");
+        const runnerSocket = new WebSocket("http://localhost:3080")
+        const id = msg.id
+        const code = docs[keys.indexOf(msg.id)];
+        
+        runnerSocket.addEventListener('open', () => {
+            console.log("Recieved an open port")
+            
+            runnerSocket.send('java-' + code)
+            
+            
+    
+            runnerSocket.on('message', (msg2) => {
+                io.emit("t-" + msg.id, {data: msg2.toString()});
+                console.log("Run data:" + msg.toString());
+            })
+
+            runnerSocket.on('close', (msg2) => {
+                console.log("Socket Closed");
+            })
+        })
+            
+            // io.emit("t-" + msg.id, {data: event.data});
+        
+
+
+    });
 
     socket.on('join', (msg) =>{
         let multiplayer = false;

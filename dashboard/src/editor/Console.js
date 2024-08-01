@@ -7,16 +7,12 @@ import './Console.css'
 
 
 
-function Console() {
+function Console({terminalFunctionSetter}) {
     const lines = useRef([]);
-    const [currentLine, setCurrentLine] = useState("");
-    const [currentCursorPosition, setCurrentCursorPosition] = useState(0);
+    const [, forceUpdate] = useState();
+    const placeholder =""
     useEffect(() => {
-        addLine("Hi");
-        addLine("Hi");
-        addLine("Hi");
-        addLine("Hi");
-        addLine("Hi");
+        terminalFunctionSetter(addLine);
 
         return () =>{
             console.log("Cleanup lol")
@@ -28,17 +24,27 @@ function Console() {
         {lines.current.map((element) => (
         element
       ))}
-      <div>
-        {currentLine}
-      </div>
     </div>
   )
   
 function addLine(text) {
+  console.log("Addline called")
+  const now = new Date();
+  const hours = now.getHours() + "";
+  const mins = now.getMinutes() + "";
+  const secs = now.getSeconds() + "";
+  const timeString = (hours.length > 1 ? hours : "0"+hours) + ":" + (mins.length > 1 ? mins : "0"+mins) + ":" + (secs.length > 1 ? secs : "0"+secs);
   lines.current.push(<div className='console-line' key={lines.current.length}> 
-          {text}
+          {timeString + ">> " + text}
+          <div>
+            {placeholder}
+            </div>
       </div>
+      
   )
+  forceUpdate({});
+
+
 
 }
 }
