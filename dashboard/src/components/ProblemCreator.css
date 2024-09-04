@@ -1,0 +1,23 @@
+.probcreator-title {
+    display: flex;
+    justify-content: center;
+    font-size: 3.4vw;
+    margin: 30px;
+    font-family: "JetBrains Mono", monospace;
+}
+
+.problem {
+    display: flex;
+    flex-direction: column;
+    width: 40vw;
+    margin: 40px;
+}
+
+.inputs-1 {
+    resize: none;
+    margin: 10px;
+}
+
+.test-cases {
+
+}

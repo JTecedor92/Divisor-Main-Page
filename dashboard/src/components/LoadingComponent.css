@@ -1,0 +1,14 @@
+.imgf-2{
+    display: block;
+    animation: spin 2s infinite linear;
+    opacity: 100%;
+}
+
+@keyframes spin{
+    from{
+        rotate: 0deg;
+    }
+    to{
+        rotate: 360deg;
+    }
+}

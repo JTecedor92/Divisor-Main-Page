@@ -44,7 +44,7 @@
     margin-right: 0.6vw;
 }
 
-.tbutton .icon {
+.tbutton .settings-icon {
     font-size: 8vh;
     color:rgb(255, 255, 255);
     animation: rotate-120 0.6s forwards;
@@ -84,7 +84,7 @@
     display: none;
 }
 
-.tbutton .icon:hover {
+.tbutton .settings-icon:hover {
     animation: rotate120 0.6s forwards;
 }
 

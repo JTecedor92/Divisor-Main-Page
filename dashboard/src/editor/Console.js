@@ -3,16 +3,14 @@ import {useEffect, useState, useRef} from 'react'
 import './Console.css'
 
 
-
-
-
-
 function Console({terminalFunctionSetter}) {
-    const lines = useRef([]);
-    const [, forceUpdate] = useState();
+  const [lines, setLines] = useState([]);
+
+   
     const placeholder =""
     useEffect(() => {
         terminalFunctionSetter(addLine);
+        
 
         return () =>{
             console.log("Cleanup lol")
@@ -21,7 +19,7 @@ function Console({terminalFunctionSetter}) {
 
   return (
     <div className='console-terminal' >
-        {lines.current.map((element) => (
+        {lines.map((element) => (
         element
       ))}
     </div>
@@ -34,15 +32,17 @@ function addLine(text) {
   const mins = now.getMinutes() + "";
   const secs = now.getSeconds() + "";
   const timeString = (hours.length > 1 ? hours : "0"+hours) + ":" + (mins.length > 1 ? mins : "0"+mins) + ":" + (secs.length > 1 ? secs : "0"+secs);
-  lines.current.push(<div className='console-line' key={lines.current.length}> 
+  setLines((prevElements) => [
+    ...prevElements,
+      <div className='console-line' key={lines.length}> 
           {timeString + ">> " + text}
           <div>
             {placeholder}
             </div>
       </div>
       
-  )
-  forceUpdate({});
+  ])
+  
 
 
 

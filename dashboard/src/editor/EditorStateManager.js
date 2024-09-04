@@ -1,29 +1,66 @@
 import React, {useState, useEffect, useRef} from 'react'
+import Icon from '../components/Icon';
+
 import './EditorStateManager.css'
 import socketIOClient from 'socket.io-client';
 
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/clike/clike';
-import 'codemirror/mode/css/css';
+import 'codemirror/mode/python/python';
 import 'codemirror/addon/edit/closebrackets'
-// import { highlightSelectionMatches } from 'codemirror/addon/selection/active-line';
+
+import PocketBase from 'pocketbase';
 import { Controlled as ControlledEditor} from 'react-codemirror2';
+import { Language } from '@mui/icons-material';
+
+const databaseEndpoint = 'http://127.0.0.1:8090';
+const database = new PocketBase(databaseEndpoint);
+
+
 
 const endpoint = "http://localhost:3001";
 
-function EditorStateManager({addLine, setSocket, sessionID, user}) {
+function EditorStateManager({caseSetter, runnerFunction, problemsSetter, loadingSetter1, addLine, setSocket, sessionID, user, currentLanguage}) {
+    const languageRef = useRef(currentLanguage);
+    useEffect(() => { 
+        languageRef.current = currentLanguage;
+        console.log("From Editor:");
+        console.log(currentLanguage);
+    }, [currentLanguage]);
 
-    const [currentLanguage, setCurrentLanguage] = useState("text/x-java");
-    const valueRef = useRef("Not Updated\nNot Updated");
+
+    const runCode = (probNum) => {
+        console.log("Run Called");
+        console.log(languageRef.current);
+        console.log(sessionID);
+        if(languageRef.current === 'text/x-java'){
+            //Java
+            outerSocket.current.emit('run', {id: sessionID, language: 'java', value: valueRef.current, number: probNum});
+        }else if(languageRef.current === 'text/x-python'){
+            //Python
+            outerSocket.current.emit('run', {id: sessionID, language: 'python', value: valueRef.current, number: probNum});
+        }else{
+            //C++
+            outerSocket.current.emit('run', {id: sessionID, language: 'cpp', value: valueRef.current, number: probNum});
+        }
+    }
+
+    useEffect(()=>{
+        console.log(currentLanguage);
+    }, [currentLanguage])
+    
+    const valueRef = useRef("@Not_Updated");
     const [value, setValue2] = useState(valueRef.current);
+
+    const [problems, setProblems] = useState([])
 
     const outerSocket = useRef(null);
     const outerEditor = useRef();
 
-    const topStyle = useRef({opacity: "50%", position: "absolute", height: "2.5vh", width: "10vw", top: "1vh", left: "4vw", backgroundColor: '#d0e6f4'})
-    const middleStyle = useRef({opacity: "40%", position: "absolute", height: "2vh", width: "10vw", top: "10vh", left: "5vw", backgroundColor: '#d0e6f4'})
-    const bottomStyle = useRef({opacity: "25%", position: "absolute", height: "2vh", width: "10vw", top: "12vh", left: "5vw", backgroundColor: '#d0e6f4'})
+    // const topStyle = useRef({opacity: "50%", position: "absolute", height: "2.5vh", width: "10vw", top: "1vh", left: "4vw", backgroundColor: '#d0e6f4'})
+    // const middleStyle = useRef({opacity: "40%", position: "absolute", height: "2vh", width: "10vw", top: "10vh", left: "5vw", backgroundColor: '#d0e6f4'})
+    // const bottomStyle = useRef({opacity: "25%", position: "absolute", height: "2vh", width: "10vw", top: "12vh", left: "5vw", backgroundColor: '#d0e6f4'})
 
 
     const cursorLine = useRef(0)
@@ -173,7 +210,7 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
                 temporary = temporary.substring(0, charStart) + `{+${addData.inserted}+}` + temporary.substring(charStart);
 
-                outerSocket.current.emit('add', {extraInfo: temporary, id: sessionID, username: user, atChar: charStart, text: addData.inserted, lastChange: lastOtherChange.current, editNumber: editNumber.current});
+                outerSocket.current.emit('add', {extraInfo: temporary, id: sessionID, username: user, atChar: charStart, text: addData.inserted, lastChange: lastOtherChange.current, editNumber: editNumber.current, language: currentLanguage});
                 editNumber.current += 1;
 
                 //Do this last
@@ -221,7 +258,7 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
                 temporary = temporary.substring(0, charStart) + `{_${temporary.substring(charStart, charEnd)}_}` + temporary.substring(charEnd);
 
-                outerSocket.current.emit('remove', {extraInfo: temporary, id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current});
+                outerSocket.current.emit('remove', {extraInfo: temporary, id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current, language: currentLanguage});
                 editNumber.current += 1;
 
                 //Do this last
@@ -249,7 +286,7 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
                     temporary = temporary.substring(0, charStart) + `{_${temporary.substring(charStart, charEnd)}_}` + temporary.substring(charEnd);
 
-                    outerSocket.current.emit('remove', {extraInfo: temporary, id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current});
+                    outerSocket.current.emit('remove', {extraInfo: temporary, id: sessionID, username: user, startChar: charStart, endChar: charEnd, lastChange: lastOtherChange.current, editNumber: editNumber.current, language: currentLanguage});
                     editNumber.current += 1;
 
                     //Do this last
@@ -265,6 +302,11 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
 
         //Store the socket in a useRef to make it accessible permanently outside the scope of this useEffect call
         outerSocket.current = socket;
+
+        console.log(typeof runCode);
+        console.log(typeof runnerFunction.current);
+        runnerFunction.current = runCode;
+
         //Pass the socket to the FullEditorPage
         setSocket(socket);
 
@@ -292,6 +334,12 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
     }, [])
 
     useEffect(() => {
+        console.log("Session ID was fr changed");
+        console.log(sessionID);
+        if(runCode !== undefined){
+            runnerFunction.current = runCode;
+
+        }
         outerSocket.current.on('t-'+sessionID, (msg) => {
             // console.log(msg.data);
             if(addLine !== undefined){
@@ -301,12 +349,18 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
                 addLine(msg.data);
             }
         })
+        outerSocket.current.on('problemsArray', (msg) => {
+            problemsSetter(msg);
+        });
         outerSocket.current.on(sessionID, (msg)=>{
             // console.log("Current value: " + valueRef.current);
             if(msg.join){
                 // console.log("Setting value to " + msg.value);
+                loadingSetter1(false);
                 setValue(msg.value);
-            }else {
+                console.log(msg);
+                
+            }else if(msg.language === currentLanguage){
                 console.log("Recieved:");
                 console.log(msg);
 
@@ -428,14 +482,13 @@ function EditorStateManager({addLine, setSocket, sessionID, user}) {
                 }}
                 editorDidMount={(editor) => {
                     outerEditor.current = editor;
-                    editor.setSize('45vw','75vh');
+                    
+                    editor.setSize('49vw','86.4vh');
                 }}
                 onKeyDown={handleKeyDown}
                 
             />
-            <div style={topStyle.current}/>
-            <div style={middleStyle.current}/>
-            <div style={bottomStyle.current}/>
+          
 
         </div>
      )

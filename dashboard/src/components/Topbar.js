@@ -34,7 +34,7 @@ function Topbar() {
       <div className= 'right'>
         <div ref={menuRef}>    
           <button className='tbutton' onClick={()=>{setOpen(!open)}}>
-            <SettingsIcon className= 'icon'/>
+            <SettingsIcon className= 'settings-icon'/>
           </button>
           <div className={`dropdown-menu ${open? 'active' : 'inactive'}`}>
             <div className='triangle'></div>
